@@ -1,0 +1,68 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Django Boilerplate - Tailwind + DaisyUI</title>
+
+    {% tailwind_css %}
+    <link href="{% static 'css/dist/styles.css' %}" rel="stylesheet">
+</head>
+<body class="bg-base-100 text-base-content transition-colors duration-300">
+
+    <!-- Navbar -->
+    <header class="p-4 bg-base-200 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold">Django Boilerplate</h1>
+        <button id="theme-toggle" class="btn btn-sm btn-outline">Toggle Dark</button>
+    </header>
+
+    <!-- Main content -->
+    <main class="p-6 space-y-6">
+        <h2 class="text-2xl font-semibold">Welcome to Tailwind + DaisyUI!</h2>
+
+        <!-- Example card -->
+        <div class="card w-full max-w-md bg-base-200 shadow-lg">
+            <div class="card-body">
+                <h3 class="card-title">Example Card</h3>
+                <p>This is a sample card using DaisyUI components and Tailwind utilities.</p>
+                <div class="card-actions">
+                    <button class="btn btn-primary">Primary Action</button>
+                    <button class="btn btn-secondary">Secondary Action</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Example alert -->
+        <div class="alert alert-info shadow-lg">
+            <div>
+                <span>Info alert: Tailwind + DaisyUI is working!</span>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="p-4 bg-base-200 text-center">
+        <p>&copy; 2025 Django Boilerplate. Made with ❤️ and TailwindCSS.</p>
+    </footer>
+
+    <!-- Theme toggle script -->
+    <script>
+        const btn = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+
+        // Load saved theme
+        const saved = localStorage.getItem('theme') || 'light';
+        html.setAttribute('data-theme', saved);
+
+        btn.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', next);
+            localStorage.setItem('theme', next);
+        });
+    </script>
+
+
+</body>
+</html>
