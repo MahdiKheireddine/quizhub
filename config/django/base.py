@@ -37,7 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     "tailwind",
-    "theme"
+    "theme",
+
+    "accounts",
 ]
 
 TAILWIND_APP_NAME = "theme"
@@ -130,6 +132,10 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Custom user model
+AUTH_USER_MODEL = "accounts.User"
 
 
 if DEBUG:
