@@ -1,0 +1,52 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html
+  lang="en"
+  x-data="{ theme: localStorage.getItem('theme') || 'dim' }"
+  x-init="document.documentElement.setAttribute('data-theme', theme)"
+  :data-theme="theme"
+>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}QuizHub{% endblock %}</title>
+
+  {% tailwind_css %}
+
+  <script defer src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-base-200 text-base-content flex flex-col antialiased">
+
+  {% include "components/navbar.html" %}
+
+  {% if messages %}
+    <div class="container mx-auto px-4 mt-4 space-y-2">
+      {% for message in messages %}
+        <div
+          x-data="{ show: true }"
+          x-show="show"
+          x-transition.opacity
+          role="alert"
+          class="alert alert-{{ message.tags }}"
+        >
+          <span>{{ message }}</span>
+          <button type="button" class="btn btn-ghost btn-sm btn-square" @click="show = false" aria-label="Dismiss">
+            &times;
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <main class="flex-1 container mx-auto px-4 py-8">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% include "components/footer.html" %}
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

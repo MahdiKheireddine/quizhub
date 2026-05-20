@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "allauth.account",
 
     "accounts",
+    "core",
 ]
 
 TAILWIND_APP_NAME = "theme"
@@ -69,7 +70,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
