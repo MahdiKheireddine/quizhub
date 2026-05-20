@@ -67,7 +67,18 @@
               </div>
             </li>
             <li><a href="/accounts/email/">Manage email</a></li>
+            {% if not user.can_create_quizzes %}
+              <li><a href="{% url 'accounts:request_creator' %}">Become a creator</a></li>
+            {% endif %}
             {% if user.is_staff %}
+              <li>
+                <a href="{% url 'accounts:creator_requests_admin' %}" class="flex items-center justify-between gap-2">
+                  <span>Review creator requests</span>
+                  {% if pending_creator_requests %}
+                    <span class="badge badge-warning badge-sm">{{ pending_creator_requests }}</span>
+                  {% endif %}
+                </a>
+              </li>
               <li><a href="/admin/">Admin panel</a></li>
             {% endif %}
             <li><hr class="my-1 border-base-300"></li>

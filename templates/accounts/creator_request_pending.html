@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Request pending · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="card bg-base-100 shadow-xl border border-base-300">
+    <div class="card-body">
+      <h1 class="text-2xl font-bold">Request pending</h1>
+
+      <div role="alert" class="alert alert-info mt-2">
+        <span>
+          Your previous request is still under review. We'll notify you once an admin responds.
+        </span>
+      </div>
+
+      <dl class="mt-4 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm">
+        <dt class="opacity-70">Submitted</dt>
+        <dd>{{ request_obj.created_at|date:"M j, Y · H:i" }}</dd>
+        <dt class="opacity-70">Status</dt>
+        <dd><span class="badge badge-warning">{{ request_obj.get_status_display }}</span></dd>
+      </dl>
+
+      <details class="collapse collapse-arrow bg-base-200 mt-4">
+        <summary class="collapse-title text-sm font-medium">Your reason</summary>
+        <div class="collapse-content text-sm whitespace-pre-wrap">{{ request_obj.reason }}</div>
+      </details>
+
+      <div class="flex justify-end mt-4">
+        <a href="{% url 'accounts:creator_status' %}" class="btn btn-ghost">View status</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

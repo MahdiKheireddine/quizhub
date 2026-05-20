@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Become a creator · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="card bg-base-100 shadow-xl border border-base-300">
+    <div class="card-body">
+      <h1 class="text-2xl font-bold">Become a creator</h1>
+      <p class="text-sm opacity-70">
+        Creators can build and publish quizzes on {{ SITE_NAME }}. Tell us a bit about why you'd like to create.
+      </p>
+
+      <form method="post" action="{% url 'accounts:request_creator' %}" class="mt-4 space-y-4">
+        {% csrf_token %}
+
+        <div x-data="{ count: '{{ form.reason.value|default:'' }}'.length }">
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend">{{ form.reason.label }}</legend>
+            <textarea
+              name="{{ form.reason.name }}"
+              id="{{ form.reason.id_for_label }}"
+              rows="5"
+              maxlength="500"
+              required
+              placeholder="Tell us why you'd like to create quizzes. What kind of quizzes would you build? (max 500 chars)"
+              @input="count = $event.target.value.length"
+              class="textarea w-full{% if form.reason.errors %} textarea-error{% endif %}"
+            >{% if form.reason.value %}{{ form.reason.value }}{% endif %}</textarea>
+            <div class="fieldset-label flex justify-between mt-1">
+              <span class="opacity-70">Minimum 20 characters.</span>
+              <span
+                x-text="count + ' / 500'"
+                :class="count < 20 ? 'text-error' : (count > 480 ? 'text-warning' : 'text-success')"
+              ></span>
+            </div>
+            {% if form.reason.errors %}
+              <p class="fieldset-label text-error">
+                {% for e in form.reason.errors %}{{ e }}{% if not forloop.last %} · {% endif %}{% endfor %}
+              </p>
+            {% endif %}
+          </fieldset>
+        </div>
+
+        <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <a href="{% url 'core:home' %}" class="btn btn-ghost">Cancel</a>
+          <button type="submit" class="btn btn-primary">Submit request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

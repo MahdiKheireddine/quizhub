@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Creator requests · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-8">
+
+  <header class="flex items-end justify-between flex-wrap gap-2">
+    <h1 class="text-3xl font-bold">Creator requests</h1>
+    <a href="/admin/accounts/creatorrequest/" class="link link-primary text-sm">Open in Django admin</a>
+  </header>
+
+  {# ───── Pending ───── #}
+  <section>
+    <div class="flex items-center gap-2 mb-4">
+      <h2 class="text-xl font-bold">Pending</h2>
+      <span class="badge {% if pending %}badge-warning{% else %}badge-ghost{% endif %}">{{ pending|length }}</span>
+    </div>
+
+    {% if pending %}
+      <div class="space-y-4">
+        {% for cr in pending %}
+          <div class="card bg-base-100 border border-base-300">
+            <div class="card-body">
+
+              <div class="flex items-start justify-between flex-wrap gap-3">
+                <div>
+                  <p class="font-semibold">{{ cr.user.username }}</p>
+                  <p class="text-sm opacity-70 break-all">{{ cr.user.email }}</p>
+                  <p class="text-xs opacity-60 mt-1">
+                    Joined {{ cr.user.date_joined|date:"M j, Y" }} · Submitted {{ cr.created_at|date:"M j, Y · H:i" }}
+                  </p>
+                </div>
+                <div class="flex flex-wrap gap-1">
+                  <span class="badge
+                    {% if cr.user.role == 'admin' %}badge-error
+                    {% elif cr.user.role == 'creator' %}badge-primary
+                    {% else %}badge-ghost{% endif %}">
+                    {{ cr.user.get_role_display }}
+                  </span>
+                </div>
+              </div>
+
+              <blockquote class="border-l-4 border-primary pl-4 italic text-base-content/80 whitespace-pre-wrap mt-2">{{ cr.reason }}</blockquote>
+
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-end mt-4">
+                <form method="post" action="{% url 'accounts:reject_creator_request' cr.pk %}" class="flex flex-col sm:flex-row gap-2 flex-1 sm:max-w-md">
+                  {% csrf_token %}
+                  <input
+                    type="text"
+                    name="note"
+                    maxlength="280"
+                    placeholder="Optional note (visible to user)"
+                    class="input input-sm w-full"
+                  />
+                  <button type="submit" class="btn btn-error btn-sm">Reject</button>
+                </form>
+                <form method="post" action="{% url 'accounts:approve_creator_request' cr.pk %}">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div role="alert" class="alert">
+        <span>No pending requests right now.</span>
+      </div>
+    {% endif %}
+  </section>
+
+  {# ───── Recently reviewed ───── #}
+  <section>
+    <h2 class="text-xl font-bold mb-4">Recently reviewed</h2>
+
+    {% if reviewed %}
+      <div class="overflow-x-auto rounded-box border border-base-300">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Status</th>
+              <th>Reviewer</th>
+              <th>Reviewed at</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cr in reviewed %}
+              <tr>
+                <td>{{ cr.user.username }}</td>
+                <td>
+                  {% if cr.status == 'approved' %}
+                    <span class="badge badge-success badge-sm">{{ cr.get_status_display }}</span>
+                  {% else %}
+                    <span class="badge badge-error badge-sm">{{ cr.get_status_display }}</span>
+                  {% endif %}
+                </td>
+                <td>{{ cr.reviewed_by.username|default:"—" }}</td>
+                <td class="text-xs opacity-70">{{ cr.reviewed_at|date:"M j, Y · H:i" }}</td>
+                <td class="text-xs opacity-80 max-w-xs truncate" title="{{ cr.review_note }}">{{ cr.review_note|default:"—" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-sm opacity-70">No reviewed requests yet.</p>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}

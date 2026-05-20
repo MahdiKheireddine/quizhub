@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Creator request · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="card bg-base-100 shadow-xl border border-base-300">
+    <div class="card-body">
+
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <h1 class="text-2xl font-bold">Creator request</h1>
+        {% if request_obj.status == 'pending' %}
+          <span class="badge badge-warning badge-lg">{{ request_obj.get_status_display }}</span>
+        {% elif request_obj.status == 'approved' %}
+          <span class="badge badge-success badge-lg">{{ request_obj.get_status_display }}</span>
+        {% else %}
+          <span class="badge badge-error badge-lg">{{ request_obj.get_status_display }}</span>
+        {% endif %}
+      </div>
+
+      {# Status-specific lead block #}
+      {% if request_obj.status == 'pending' %}
+        <p class="text-sm opacity-70 mt-1">We're reviewing your request. You'll be notified once an admin responds.</p>
+      {% elif request_obj.status == 'approved' %}
+        <div role="alert" class="alert alert-success mt-3">
+          <span>You're a creator now. Time to build something.</span>
+        </div>
+      {% else %}
+        <p class="text-sm opacity-70 mt-1">Your request was not approved this time.</p>
+        {% if request_obj.review_note %}
+          <div role="alert" class="alert alert-warning mt-3">
+            <div>
+              <p class="font-semibold">Reviewer note</p>
+              <p class="whitespace-pre-wrap">{{ request_obj.review_note }}</p>
+            </div>
+          </div>
+        {% endif %}
+      {% endif %}
+
+      {# Timeline #}
+      <ul class="steps steps-vertical mt-6">
+        <li class="step step-primary">
+          <div class="text-left">
+            <p class="font-semibold">Submitted</p>
+            <p class="text-xs opacity-70">{{ request_obj.created_at|date:"M j, Y · H:i" }}</p>
+          </div>
+        </li>
+        {% if request_obj.reviewed_at %}
+          <li class="step {% if request_obj.status == 'approved' %}step-success{% else %}step-error{% endif %}">
+            <div class="text-left">
+              <p class="font-semibold">Reviewed</p>
+              <p class="text-xs opacity-70">
+                {{ request_obj.reviewed_at|date:"M j, Y · H:i" }}
+                {% if request_obj.reviewed_by %}· by {{ request_obj.reviewed_by.username }}{% endif %}
+              </p>
+            </div>
+          </li>
+        {% else %}
+          <li class="step">
+            <div class="text-left">
+              <p class="font-semibold opacity-70">Awaiting review</p>
+            </div>
+          </li>
+        {% endif %}
+      </ul>
+
+      {# Submitted reason (always visible for pending; collapsed for reviewed) #}
+      {% if request_obj.status == 'pending' %}
+        <div class="mt-6">
+          <p class="text-sm font-semibold mb-1">Your reason</p>
+          <blockquote class="border-l-4 border-primary pl-4 italic text-base-content/80 whitespace-pre-wrap">{{ request_obj.reason }}</blockquote>
+        </div>
+      {% else %}
+        <details class="collapse collapse-arrow bg-base-200 mt-6">
+          <summary class="collapse-title text-sm font-medium">Your submitted reason</summary>
+          <div class="collapse-content text-sm whitespace-pre-wrap">{{ request_obj.reason }}</div>
+        </details>
+      {% endif %}
+
+      {# Footer actions #}
+      <div class="flex flex-col gap-2 sm:flex-row sm:justify-end mt-6">
+        {% if request_obj.status == 'approved' %}
+          <a href="#" class="btn btn-primary">Create your first quiz</a>
+        {% elif request_obj.status == 'rejected' %}
+          <a href="{% url 'accounts:request_creator' %}" class="btn btn-primary">Submit a new request</a>
+        {% endif %}
+        <a href="{% url 'core:home' %}" class="btn btn-ghost">Back to home</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
