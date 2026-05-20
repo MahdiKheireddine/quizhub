@@ -1,0 +1,77 @@
+{% extends "account/base.html" %}
+{% load allauth account %}
+
+{% block title %}Log in · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+  <div class="card bg-base-100 shadow-xl border border-base-300">
+    <div class="card-body">
+      <h1 class="text-2xl font-bold">Welcome back</h1>
+      <p class="text-sm opacity-70">Log in to continue.</p>
+
+      {% if form.non_field_errors %}
+        <div role="alert" class="alert alert-error mt-3">
+          {% for err in form.non_field_errors %}
+            <span>{{ err }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'account_login' %}" class="space-y-4 mt-4">
+        {% csrf_token %}
+
+        {% for field in form %}
+          {% if field.field.widget.input_type == 'checkbox' %}
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name="{{ field.name }}"
+                id="{{ field.id_for_label }}"
+                {% if field.value %}checked{% endif %}
+                class="checkbox checkbox-sm"
+              />
+              <span class="text-sm">{{ field.label }}</span>
+            </label>
+          {% else %}
+            <fieldset class="fieldset w-full">
+              <legend class="fieldset-legend">{{ field.label }}</legend>
+              <input
+                type="{% if field.name == 'login' or field.name == 'email' %}email{% else %}{{ field.field.widget.input_type }}{% endif %}"
+                name="{{ field.name }}"
+                id="{{ field.id_for_label }}"
+                {% if field.value and field.field.widget.input_type != 'password' %}value="{{ field.value }}"{% endif %}
+                {% if field.field.required %}required{% endif %}
+                placeholder="{{ field.label }}"
+                class="input w-full{% if field.errors %} input-error{% endif %}"
+                autocomplete="{% if field.name == 'password' %}current-password{% elif field.name == 'login' or field.name == 'email' %}email{% else %}off{% endif %}"
+              />
+              {% if field.errors %}
+                <p class="fieldset-label text-error">
+                  {% for e in field.errors %}{{ e }}{% if not forloop.last %} · {% endif %}{% endfor %}
+                </p>
+              {% endif %}
+            </fieldset>
+          {% endif %}
+        {% endfor %}
+
+        {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary w-full mt-2">Log in</button>
+      </form>
+
+      <div class="divider my-4"></div>
+
+      <div class="flex flex-col items-center gap-1 text-sm">
+        <a href="{% url 'account_reset_password' %}" class="link link-primary">Forgot password?</a>
+        <p class="opacity-70">
+          No account?
+          <a href="{% url 'account_signup' %}" class="link link-primary">Sign up</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

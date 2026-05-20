@@ -1,0 +1,41 @@
+{% extends "account/base.html" %}
+{% load allauth account %}
+
+{% block title %}Confirm email · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+  <div class="card bg-base-100 shadow-xl border border-base-300">
+    <div class="card-body">
+
+      {% if confirmation %}
+        <h1 class="text-2xl font-bold">Confirm your email</h1>
+        <p class="text-sm opacity-80">
+          Confirm that
+          <a href="mailto:{{ confirmation.email_address.email }}" class="link link-primary">{{ confirmation.email_address.email }}</a>
+          belongs to
+          <span class="font-semibold">{{ confirmation.email_address.user }}</span>.
+        </p>
+
+        <form method="post" action="{% url 'account_confirm_email' confirmation.key %}" class="mt-4">
+          {% csrf_token %}
+          {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+          {% endif %}
+          <button type="submit" class="btn btn-primary w-full">Confirm</button>
+        </form>
+      {% else %}
+        <h1 class="text-2xl font-bold">Link expired</h1>
+        <p class="text-sm opacity-70">
+          This confirmation link is invalid or has already been used.
+        </p>
+        <div role="alert" class="alert alert-error mt-3">
+          <span>Request a fresh verification email from your account settings.</span>
+        </div>
+        <a href="{% url 'account_email' %}" class="btn btn-primary w-full mt-4">Manage email addresses</a>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

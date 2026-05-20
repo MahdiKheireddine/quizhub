@@ -1,0 +1,24 @@
+{% extends "account/base.html" %}
+{% load allauth account %}
+
+{% block title %}Log out · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+  <div class="card bg-base-100 shadow-xl border border-base-300">
+    <div class="card-body">
+      <h1 class="text-2xl font-bold">Log out</h1>
+      <p class="text-sm opacity-70">Are you sure you want to log out?</p>
+
+      <form method="post" action="{% url 'account_logout' %}" class="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+        {% csrf_token %}
+        {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+        {% endif %}
+        <a href="/" class="btn btn-ghost">Cancel</a>
+        <button type="submit" class="btn btn-error">Yes, log me out</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "account/base.html" %}
+{% load allauth account %}
+
+{% block title %}Email addresses · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+
+  {# ---- Existing emails ---- #}
+  <div class="card bg-base-100 shadow-xl border border-base-300">
+    <div class="card-body">
+      <h1 class="text-2xl font-bold">Email addresses</h1>
+      <p class="text-sm opacity-70">
+        Manage the email addresses associated with your account.
+      </p>
+
+      {% if user.emailaddress_set.all %}
+        <form method="post" action="{% url 'account_email' %}" class="mt-4 space-y-4">
+          {% csrf_token %}
+
+          <ul class="space-y-2">
+            {% for emailaddress in user.emailaddress_set.all %}
+              <li class="flex items-center gap-3 rounded-lg border border-base-300 bg-base-200/50 p-3">
+                <input
+                  type="radio"
+                  name="email"
+                  value="{{ emailaddress.email }}"
+                  id="email_radio_{{ forloop.counter }}"
+                  class="radio radio-primary radio-sm"
+                  {% if emailaddress.primary or user.emailaddress_set.count == 1 %}checked{% endif %}
+                />
+                <label for="email_radio_{{ forloop.counter }}" class="flex-1 cursor-pointer">
+                  <span class="break-all">{{ emailaddress.email }}</span>
+                </label>
+                <div class="flex flex-wrap gap-1 justify-end">
+                  {% if emailaddress.verified %}
+                    <span class="badge badge-success badge-sm">Verified</span>
+                  {% else %}
+                    <span class="badge badge-warning badge-sm">Unverified</span>
+                  {% endif %}
+                  {% if emailaddress.primary %}
+                    <span class="badge badge-primary badge-sm">Primary</span>
+                  {% endif %}
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+
+          <div class="flex flex-wrap gap-2 pt-2">
+            <button type="submit" name="action_primary" class="btn btn-primary btn-sm">
+              Make primary
+            </button>
+            <button type="submit" name="action_send" class="btn btn-ghost btn-sm">
+              Re-send verification
+            </button>
+            <button
+              type="submit"
+              name="action_remove"
+              class="btn btn-error btn-sm"
+              @click="if (!confirm('Remove the selected email address?')) { $event.preventDefault(); }"
+            >
+              Remove
+            </button>
+          </div>
+        </form>
+      {% else %}
+        <div role="alert" class="alert alert-warning mt-4">
+          <span>You don't have any email addresses on file.</span>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ---- Add new email ---- #}
+  <div class="card bg-base-100 shadow-xl border border-base-300">
+    <div class="card-body">
+      <h2 class="text-xl font-bold">Add an email address</h2>
+      <p class="text-sm opacity-70">
+        We'll send a verification link to the new address before activating it.
+      </p>
+
+      {% if form.non_field_errors %}
+        <div role="alert" class="alert alert-error mt-3">
+          {% for err in form.non_field_errors %}
+            <span>{{ err }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'account_email' %}" class="space-y-4 mt-4">
+        {% csrf_token %}
+
+        {% for field in form %}
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend">{{ field.label }}</legend>
+            <input
+              type="{% if field.name == 'email' %}email{% else %}{{ field.field.widget.input_type }}{% endif %}"
+              name="{{ field.name }}"
+              id="{{ field.id_for_label }}"
+              {% if field.value %}value="{{ field.value }}"{% endif %}
+              {% if field.field.required %}required{% endif %}
+              placeholder="{{ field.label }}"
+              class="input w-full{% if field.errors %} input-error{% endif %}"
+              autocomplete="email"
+            />
+            {% if field.errors %}
+              <p class="fieldset-label text-error">
+                {% for e in field.errors %}{{ e }}{% if not forloop.last %} · {% endif %}{% endfor %}
+              </p>
+            {% endif %}
+          </fieldset>
+        {% endfor %}
+
+        <button type="submit" name="action_add" class="btn btn-primary w-full sm:w-auto">
+          Add email
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

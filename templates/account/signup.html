@@ -1,0 +1,77 @@
+{% extends "account/base.html" %}
+{% load allauth account %}
+
+{% block title %}Sign up · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+  <div class="card bg-base-100 shadow-xl border border-base-300">
+    <div class="card-body">
+      <h1 class="text-2xl font-bold">Create your account</h1>
+      <p class="text-sm opacity-70">It's free. Get started in 30 seconds.</p>
+
+      {% if form.non_field_errors %}
+        <div role="alert" class="alert alert-error mt-3">
+          {% for err in form.non_field_errors %}
+            <span>{{ err }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'account_signup' %}" class="space-y-4 mt-4">
+        {% csrf_token %}
+
+        {% for field in form %}
+          {% if field.field.widget.input_type == 'checkbox' %}
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name="{{ field.name }}"
+                id="{{ field.id_for_label }}"
+                {% if field.value %}checked{% endif %}
+                class="checkbox checkbox-sm"
+              />
+              <span class="text-sm">{{ field.label }}</span>
+            </label>
+          {% else %}
+            <fieldset class="fieldset w-full">
+              <legend class="fieldset-legend">{{ field.label }}</legend>
+              <input
+                type="{% if field.name == 'login' or field.name == 'email' %}email{% else %}{{ field.field.widget.input_type }}{% endif %}"
+                name="{{ field.name }}"
+                id="{{ field.id_for_label }}"
+                {% if field.value and field.field.widget.input_type != 'password' %}value="{{ field.value }}"{% endif %}
+                {% if field.field.required %}required{% endif %}
+                placeholder="{{ field.label }}"
+                class="input w-full{% if field.errors %} input-error{% endif %}"
+                autocomplete="{% if field.name == 'password1' or field.name == 'password2' %}new-password{% elif field.name == 'password' %}current-password{% elif field.name == 'login' or field.name == 'email' %}email{% else %}off{% endif %}"
+              />
+              {% if field.help_text %}
+                <p class="fieldset-label">{{ field.help_text|safe }}</p>
+              {% endif %}
+              {% if field.errors %}
+                <p class="fieldset-label text-error">
+                  {% for e in field.errors %}{{ e }}{% if not forloop.last %} · {% endif %}{% endfor %}
+                </p>
+              {% endif %}
+            </fieldset>
+          {% endif %}
+        {% endfor %}
+
+        {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary w-full mt-2">Create account</button>
+      </form>
+
+      <div class="divider my-4"></div>
+
+      <p class="text-center text-sm opacity-70">
+        Already have an account?
+        <a href="{% url 'account_login' %}" class="link link-primary">Log in</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
