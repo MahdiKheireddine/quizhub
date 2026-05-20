@@ -47,6 +47,7 @@ INSTALLED_APPS = [
 
     "accounts",
     "core",
+    "quizzes",
 ]
 
 TAILWIND_APP_NAME = "theme"
