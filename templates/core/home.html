@@ -1,11 +1,122 @@
 {% extends "base.html" %}
 
-{% block title %}QuizHub · Home{% endblock %}
+{% block title %}{{ SITE_NAME }} · Quizzes done right{% endblock %}
 
 {% block content %}
-  <div class="prose">
-    <h1>Welcome to QuizHub</h1>
-    <p>Base template is wired up. Real landing page coming in commit 7.</p>
-    <p class="text-sm opacity-70">If you see daisyUI styling on this text, Tailwind + daisyUI is working. If you can swap themes via the theme switcher (coming next commit), Alpine is working.</p>
+
+{# ───── Section 1: Hero ───── #}
+<section class="hero min-h-[60vh] rounded-box bg-gradient-to-br from-primary/20 via-base-100 to-secondary/20 relative overflow-hidden">
+  <div
+    class="absolute inset-0 opacity-30 pointer-events-none text-base-content"
+    style="background-image: radial-gradient(circle, currentColor 1px, transparent 1px); background-size: 24px 24px;"
+  ></div>
+  <div class="hero-content text-center relative z-10 max-w-2xl">
+    <div>
+      <div class="badge badge-primary badge-outline mb-4 font-mono">v0.1 · alpha</div>
+      <h1 class="text-5xl md:text-6xl font-extrabold leading-tight tracking-tight">
+        Quizzes, the way <span class="text-primary">you</span> want them.
+      </h1>
+      <p class="py-6 text-base-content/80 text-lg">
+        Build weighted quizzes, share them publicly or privately, and watch the leaderboard fill up in real time.
+      </p>
+      <div class="flex flex-row flex-wrap gap-3 justify-center">
+        {% if user.is_authenticated %}
+          <a href="#" class="btn btn-primary">Browse quizzes</a>
+          {% if user.can_create_quizzes %}
+            <a href="#" class="btn btn-outline">Create a quiz</a>
+          {% else %}
+            <a href="#" class="btn btn-outline">Become a creator</a>
+          {% endif %}
+        {% else %}
+          <a href="{% url 'account_signup' %}" class="btn btn-primary">Get started — free</a>
+          <a href="{% url 'account_login' %}" class="btn btn-ghost">I have an account</a>
+        {% endif %}
+      </div>
+    </div>
   </div>
+</section>
+
+{# ───── Section 2: Feature cards ───── #}
+<section class="mt-12 grid md:grid-cols-3 gap-6">
+  <div class="card bg-base-100 shadow-md hover:shadow-xl transition-shadow border border-base-300">
+    <div class="card-body">
+      <div class="text-3xl">🎯</div>
+      <h3 class="card-title">Weighted scoring</h3>
+      <p class="text-base-content/70">Set custom point values per question. Reward depth, not just speed.</p>
+    </div>
+  </div>
+  <div class="card bg-base-100 shadow-md hover:shadow-xl transition-shadow border border-base-300">
+    <div class="card-body">
+      <div class="text-3xl">🔀</div>
+      <h3 class="card-title">Fair by design</h3>
+      <p class="text-base-content/70">Questions shuffle per attempt — no two users see them in the same order.</p>
+    </div>
+  </div>
+  <div class="card bg-base-100 shadow-md hover:shadow-xl transition-shadow border border-base-300">
+    <div class="card-body">
+      <div class="text-3xl">🏆</div>
+      <h3 class="card-title">Live leaderboards</h3>
+      <p class="text-base-content/70">Per-quiz rankings keep the competition friendly and visible.</p>
+    </div>
+  </div>
+</section>
+
+{# ───── Section 3: How it works ───── #}
+<section class="mt-16">
+  <h2 class="text-2xl font-bold mb-6 text-center">How it works</h2>
+  <ul class="steps steps-vertical lg:steps-horizontal w-full">
+    <li class="step step-primary">Sign up free</li>
+    <li class="step step-primary">Request creator access</li>
+    <li class="step">Build a quiz</li>
+    <li class="step">Share publicly or by invite</li>
+    <li class="step">See the leaderboard</li>
+  </ul>
+</section>
+
+{# ───── Section 4: For creators / For everyone ───── #}
+<section class="mt-16 grid md:grid-cols-2 gap-8">
+  <div class="card bg-base-100 border border-base-300">
+    <div class="card-body">
+      <h2 class="card-title text-2xl">For creators</h2>
+      <p class="text-base-content/70">Tools that take quiz-building seriously.</p>
+      <ul class="space-y-2 mt-2">
+        <li class="flex items-start gap-2"><span class="text-primary mt-0.5 font-bold">✓</span><span>Weighted points per question</span></li>
+        <li class="flex items-start gap-2"><span class="text-primary mt-0.5 font-bold">✓</span><span>Single &amp; multiple choice</span></li>
+        <li class="flex items-start gap-2"><span class="text-primary mt-0.5 font-bold">✓</span><span>Public or invite-only sharing</span></li>
+        <li class="flex items-start gap-2"><span class="text-primary mt-0.5 font-bold">✓</span><span>Pause or close quizzes any time</span></li>
+        <li class="flex items-start gap-2"><span class="text-primary mt-0.5 font-bold">✓</span><span>Per-quiz leaderboards</span></li>
+        <li class="flex items-start gap-2"><span class="text-primary mt-0.5 font-bold">✓</span><span>Creator profile page</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="card bg-base-100 border border-base-300">
+    <div class="card-body">
+      <h2 class="card-title text-2xl">For everyone</h2>
+      <p class="text-base-content/70">Take quizzes that respect your time.</p>
+      <ul class="space-y-2 mt-2">
+        <li class="flex items-start gap-2"><span class="text-secondary mt-0.5 font-bold">✓</span><span>Free to take any public quiz</span></li>
+        <li class="flex items-start gap-2"><span class="text-secondary mt-0.5 font-bold">✓</span><span>Fairly shuffled questions</span></li>
+        <li class="flex items-start gap-2"><span class="text-secondary mt-0.5 font-bold">✓</span><span>Score auto-saved as you go</span></li>
+        <li class="flex items-start gap-2"><span class="text-secondary mt-0.5 font-bold">✓</span><span>See your rank when you finish</span></li>
+        <li class="flex items-start gap-2"><span class="text-secondary mt-0.5 font-bold">✓</span><span>Browse creators you trust</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+{# ───── Section 5: Final CTA ───── #}
+<section class="mt-16">
+  <div class="card bg-primary text-primary-content shadow-xl">
+    <div class="card-body items-center text-center py-12">
+      <h2 class="text-3xl font-bold">Ready to start?</h2>
+      <p class="opacity-90">Sign up takes 30 seconds. No credit card. No catch.</p>
+      {% if user.is_authenticated %}
+        <a href="#" class="btn btn-secondary btn-lg mt-2">Browse quizzes</a>
+      {% else %}
+        <a href="{% url 'account_signup' %}" class="btn btn-secondary btn-lg mt-2">Create your free account</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
 {% endblock %}
