@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }} · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+  {# Breadcrumb #}
+  <nav class="text-sm opacity-70">
+    <a href="{% url 'quizzes:my_quizzes' %}" class="link link-hover">My quizzes</a>
+    <span class="mx-2">/</span>
+    <span>{{ quiz.title }}</span>
+  </nav>
+
+  {# Header card #}
+  <div class="card bg-base-100 shadow border border-base-300">
+    <div class="card-body">
+
+      <div class="flex items-start justify-between flex-wrap gap-3">
+        <div class="flex-1 min-w-0">
+          <h1 class="text-3xl font-bold break-words">{{ quiz.title }}</h1>
+          <div class="flex flex-wrap gap-1 mt-2">
+            {% if quiz.is_published %}
+              <span class="badge badge-success">Published</span>
+              {% if quiz.is_active %}
+                <span class="badge badge-primary">Active</span>
+              {% else %}
+                <span class="badge badge-warning">Paused</span>
+              {% endif %}
+            {% else %}
+              <span class="badge badge-ghost">Draft</span>
+            {% endif %}
+            {% if quiz.closes_at %}
+              {% now "U" as now_ts %}
+              {% if quiz.closes_at|date:"U" < now_ts %}
+                <span class="badge badge-error" title="{{ quiz.closes_at|date:'M j, Y · H:i' }}">Closed</span>
+              {% else %}
+                <span class="badge badge-info" title="{{ quiz.closes_at|date:'M j, Y · H:i' }}">Closes soon</span>
+              {% endif %}
+            {% endif %}
+            <span class="badge badge-outline">{{ quiz.get_visibility_display }}</span>
+          </div>
+        </div>
+      </div>
+
+      {% if quiz.description %}
+        <p class="text-base-content/80 whitespace-pre-wrap mt-2">{{ quiz.description }}</p>
+      {% endif %}
+
+      <div class="text-xs opacity-60">
+        Created by {{ quiz.creator.username }} ·
+        Created {{ quiz.created_at|date:"M j, Y" }} ·
+        Updated {{ quiz.updated_at|timesince }} ago
+        {% if quiz.closes_at %}· Closes {{ quiz.closes_at|date:"M j, Y · H:i" }}{% endif %}
+      </div>
+
+      <div class="flex flex-wrap gap-2 mt-3">
+        <a href="{% url 'quizzes:quiz_edit' slug=quiz.slug %}" class="btn btn-ghost btn-sm">Edit details</a>
+
+        {# Toggle publish — `contents` lets the form disappear from layout so the button flows in the flex row #}
+        <form method="post" action="{% url 'quizzes:quiz_toggle_publish' slug=quiz.slug %}" class="contents">
+          {% csrf_token %}
+          {% if quiz.is_published %}
+            <button type="submit" class="btn btn-warning btn-sm">Unpublish</button>
+          {% else %}
+            <button type="submit" class="btn btn-primary btn-sm">Publish</button>
+          {% endif %}
+        </form>
+
+        {% if quiz.is_published %}
+          <form method="post" action="{% url 'quizzes:quiz_toggle_active' slug=quiz.slug %}" class="contents">
+            {% csrf_token %}
+            {% if quiz.is_active %}
+              <button type="submit" class="btn btn-ghost btn-sm">Pause</button>
+            {% else %}
+              <button type="submit" class="btn btn-success btn-sm">Resume</button>
+            {% endif %}
+          </form>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  {# Stats #}
+  <div class="stats stats-vertical sm:stats-horizontal shadow w-full">
+    <div class="stat">
+      <div class="stat-title">Questions</div>
+      <div class="stat-value">{{ quiz.question_count }}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-title">Total points</div>
+      <div class="stat-value">{{ quiz.total_points }}</div>
+    </div>
+    <div class="stat">
+      <div class="stat-title">Status</div>
+      <div class="stat-value text-2xl {% if quiz.is_accepting_responses %}text-success{% else %}text-warning{% endif %}">
+        {% if quiz.is_accepting_responses %}Live{% else %}Not accepting{% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# Questions section #}
+  <section>
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-xl font-bold">Questions</h2>
+      <button type="button" class="btn btn-primary btn-sm" disabled title="Question editor lands in the next update.">
+        + Add question
+      </button>
+    </div>
+
+    {% if quiz.question_count == 0 %}
+      <div role="alert" class="alert">
+        <div>
+          <p>No questions yet — add some to publish this quiz.</p>
+          <p class="text-xs opacity-70 mt-1">(Question editor lands in the next update.)</p>
+        </div>
+      </div>
+    {% else %}
+      <ol class="space-y-2 list-decimal list-inside">
+        {% for question in quiz.questions.all %}
+          <li class="card bg-base-100 border border-base-300">
+            <div class="card-body py-3 px-4">
+              <div class="flex items-start justify-between gap-2">
+                <span class="break-words">{{ question.text }}</span>
+                <span class="text-xs opacity-60 whitespace-nowrap">
+                  {{ question.points }} pts · {{ question.get_type_display }}
+                </span>
+              </div>
+            </div>
+          </li>
+        {% endfor %}
+      </ol>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}

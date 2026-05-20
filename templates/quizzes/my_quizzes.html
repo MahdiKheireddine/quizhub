@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}My quizzes · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+
+  <header class="flex items-end justify-between flex-wrap gap-2 mb-6">
+    <div>
+      <h1 class="text-3xl font-bold">My quizzes</h1>
+      <p class="text-sm opacity-70">Your drafts and published quizzes.</p>
+    </div>
+    <a href="{% url 'quizzes:quiz_create' %}" class="btn btn-primary">+ New quiz</a>
+  </header>
+
+  {% if not quizzes %}
+    <div class="card bg-base-100 border border-base-300">
+      <div class="card-body items-center text-center py-16">
+        <div class="text-5xl">📋</div>
+        <h2 class="card-title">You haven't created a quiz yet</h2>
+        <p class="text-base-content/70 max-w-md">
+          Start with a title and a question or two. You can keep it as a draft as long as you need.
+        </p>
+        <a href="{% url 'quizzes:quiz_create' %}" class="btn btn-primary mt-2">Build your first quiz</a>
+      </div>
+    </div>
+  {% else %}
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {% for quiz in quizzes %}
+        <div class="card bg-base-100 border border-base-300 hover:shadow-lg transition-shadow">
+          <div class="card-body">
+
+            <div class="flex flex-wrap gap-1 mb-2">
+              {% if quiz.is_published %}
+                <span class="badge badge-success">Published</span>
+                {% if quiz.is_active %}
+                  <span class="badge badge-primary">Active</span>
+                {% else %}
+                  <span class="badge badge-warning">Paused</span>
+                {% endif %}
+              {% else %}
+                <span class="badge badge-ghost">Draft</span>
+              {% endif %}
+              {% if quiz.closes_at %}
+                {% now "U" as now_ts %}
+                {% if quiz.closes_at|date:"U" < now_ts %}
+                  <span class="badge badge-error" title="{{ quiz.closes_at|date:'M j, Y · H:i' }}">Closed</span>
+                {% else %}
+                  <span class="badge badge-info" title="{{ quiz.closes_at|date:'M j, Y · H:i' }}">Closes soon</span>
+                {% endif %}
+              {% endif %}
+              <span class="badge badge-outline">{{ quiz.get_visibility_display }}</span>
+            </div>
+
+            <a href="{% url 'quizzes:detail' slug=quiz.slug %}" class="card-title hover:text-primary transition">
+              {{ quiz.title }}
+            </a>
+
+            {% if quiz.description %}
+              <p class="text-sm opacity-70 line-clamp-2">{{ quiz.description }}</p>
+            {% endif %}
+
+            <div class="flex justify-between text-xs opacity-60 mt-2">
+              <span>{{ quiz.question_count }} questions · {{ quiz.total_points }} pts</span>
+              <span>Updated {{ quiz.updated_at|timesince }} ago</span>
+            </div>
+
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

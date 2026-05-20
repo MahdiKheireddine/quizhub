@@ -66,6 +66,9 @@
                 </span>
               </div>
             </li>
+            {% if user.can_create_quizzes %}
+              <li><a href="{% url 'quizzes:my_quizzes' %}">📋 My quizzes</a></li>
+            {% endif %}
             <li><a href="/accounts/email/">Manage email</a></li>
             {% if not user.can_create_quizzes %}
               <li><a href="{% url 'accounts:request_creator' %}">Become a creator</a></li>

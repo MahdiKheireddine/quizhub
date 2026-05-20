@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}{% if mode == "create" %}New quiz{% else %}Edit {{ quiz.title }}{% endif %} · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+  <header class="mb-4">
+    <h1 class="text-3xl font-bold">
+      {% if mode == "create" %}Create quiz{% else %}Edit quiz{% endif %}
+    </h1>
+    {% if mode == "edit" %}
+      <p class="text-sm opacity-70">Editing &ldquo;{{ quiz.title }}&rdquo;.</p>
+    {% endif %}
+  </header>
+
+  <div class="card bg-base-100 shadow-xl border border-base-300">
+    <div class="card-body">
+
+      {% if form.non_field_errors %}
+        <div role="alert" class="alert alert-error">
+          {% for err in form.non_field_errors %}<span>{{ err }}</span>{% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" class="space-y-5"
+        action="{% if mode == 'edit' %}{% url 'quizzes:quiz_edit' slug=quiz.slug %}{% else %}{% url 'quizzes:quiz_create' %}{% endif %}">
+        {% csrf_token %}
+
+        {# ────────── Basics ────────── #}
+        <div class="divider divider-start text-xs opacity-70 uppercase tracking-wide">Basics</div>
+
+        <fieldset class="fieldset w-full">
+          <legend class="fieldset-legend">{{ form.title.label }}</legend>
+          {{ form.title }}
+          {% for e in form.title.errors %}<p class="fieldset-label text-error">{{ e }}</p>{% endfor %}
+        </fieldset>
+
+        <fieldset class="fieldset w-full">
+          <legend class="fieldset-legend">{{ form.description.label }}</legend>
+          {{ form.description }}
+          {% for e in form.description.errors %}<p class="fieldset-label text-error">{{ e }}</p>{% endfor %}
+        </fieldset>
+
+        {# ────────── Access ────────── #}
+        <div class="divider divider-start text-xs opacity-70 uppercase tracking-wide">Access</div>
+
+        <fieldset class="fieldset w-full">
+          <legend class="fieldset-legend">{{ form.visibility.label }}</legend>
+          {{ form.visibility }}
+          {% if form.visibility.help_text %}<p class="fieldset-label opacity-70">{{ form.visibility.help_text }}</p>{% endif %}
+          {% for e in form.visibility.errors %}<p class="fieldset-label text-error">{{ e }}</p>{% endfor %}
+        </fieldset>
+
+        <fieldset class="fieldset w-full">
+          <legend class="fieldset-legend">{{ form.closes_at.label }}</legend>
+          {{ form.closes_at }}
+          {% if form.closes_at.help_text %}<p class="fieldset-label opacity-70">{{ form.closes_at.help_text }}</p>{% endif %}
+          {% for e in form.closes_at.errors %}<p class="fieldset-label text-error">{{ e }}</p>{% endfor %}
+        </fieldset>
+
+        <label class="flex items-center gap-3 cursor-pointer">
+          {{ form.is_active }}
+          <span class="text-sm">{{ form.is_active.label }}</span>
+        </label>
+        {% for e in form.is_active.errors %}<p class="text-error text-xs">{{ e }}</p>{% endfor %}
+
+        {# ────────── Behavior ────────── #}
+        <div class="divider divider-start text-xs opacity-70 uppercase tracking-wide">Behavior</div>
+
+        <label class="flex items-center gap-3 cursor-pointer">
+          {{ form.allow_retakes }}
+          <span class="text-sm">{{ form.allow_retakes.label }}</span>
+        </label>
+        {% for e in form.allow_retakes.errors %}<p class="text-error text-xs">{{ e }}</p>{% endfor %}
+
+        <label class="flex items-center gap-3 cursor-pointer">
+          {{ form.show_results_immediately }}
+          <span class="text-sm">{{ form.show_results_immediately.label }}</span>
+        </label>
+        {% for e in form.show_results_immediately.errors %}<p class="text-error text-xs">{{ e }}</p>{% endfor %}
+
+        <fieldset class="fieldset w-full">
+          <legend class="fieldset-legend">{{ form.pass_score.label }}</legend>
+          {{ form.pass_score }}
+          <p class="fieldset-label opacity-70">Leave blank for no pass mark.</p>
+          {% for e in form.pass_score.errors %}<p class="fieldset-label text-error">{{ e }}</p>{% endfor %}
+        </fieldset>
+
+        {# ────────── Actions ────────── #}
+        <div class="flex flex-col gap-2 sm:flex-row sm:justify-end mt-2">
+          {% if mode == "edit" %}
+            <a href="{% url 'quizzes:detail' slug=quiz.slug %}" class="btn btn-ghost">Cancel</a>
+          {% else %}
+            <a href="{% url 'quizzes:my_quizzes' %}" class="btn btn-ghost">Cancel</a>
+          {% endif %}
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  {% if mode == "edit" %}
+    <div class="mt-10 text-center">
+      <a href="{% url 'quizzes:quiz_delete' slug=quiz.slug %}" class="text-error link link-hover text-sm">
+        Delete this quiz
+      </a>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
