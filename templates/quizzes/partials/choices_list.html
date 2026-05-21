@@ -1,0 +1,39 @@
+<ul class="space-y-1">
+  {% for c in q.choices.all %}
+    <li class="flex items-center gap-2">
+      {# ── Toggle correct ── #}
+      <button
+        hx-post="{% url 'quizzes:choice_toggle_correct' c.id %}"
+        hx-target="#choices-{{ q.id }}"
+        hx-swap="innerHTML"
+        class="btn btn-xs {% if c.is_correct %}btn-success{% else %}btn-ghost{% endif %}"
+        title="Toggle correct"
+      >
+        {% if c.is_correct %}✓{% else %}○{% endif %}
+      </button>
+
+      {# ── Inline text edit (blur to save) ── #}
+      <form
+        hx-post="{% url 'quizzes:choice_update' c.id %}"
+        hx-target="#choices-{{ q.id }}"
+        hx-swap="innerHTML"
+        hx-trigger="blur from:input[name='text']"
+        class="flex-1"
+      >
+        <input type="text" name="text" value="{{ c.text }}" class="input input-sm w-full" />
+        <input type="hidden" name="is_correct" value="{{ c.is_correct|yesno:'1,' }}" />
+      </form>
+
+      {# ── Delete ── #}
+      <button
+        hx-delete="{% url 'quizzes:choice_delete' c.id %}"
+        hx-target="#choices-{{ q.id }}"
+        hx-swap="innerHTML"
+        hx-confirm="Delete this choice?"
+        class="btn btn-ghost btn-xs text-error"
+      >✕</button>
+    </li>
+  {% empty %}
+    <li class="text-xs opacity-50 italic">No choices yet. Add one below.</li>
+  {% endfor %}
+</ul>

@@ -1,7 +1,7 @@
 from django import forms
 from django.utils import timezone
 
-from .models import Quiz
+from .models import Choice, Question, Quiz
 
 
 # Reusable daisyUI v5 classes. `input`, `textarea`, `select` are bordered by
@@ -71,3 +71,44 @@ class QuizForm(forms.ModelForm):
         if ps is not None and (ps < 0 or ps > 100):
             raise forms.ValidationError("Pass score must be between 0 and 100.")
         return ps
+
+
+class QuestionForm(forms.ModelForm):
+    class Meta:
+        model = Question
+        fields = ["text", "type", "points"]
+        widgets = {
+            "text": forms.Textarea(attrs={
+                "class": TEXTAREA, "rows": 2,
+                "placeholder": "Question text",
+            }),
+            "type": forms.Select(attrs={"class": "select select-sm"}),
+            "points": forms.NumberInput(attrs={
+                "class": "input input-sm w-20", "min": 1, "max": 100,
+            }),
+        }
+
+    def clean_text(self):
+        text = self.cleaned_data["text"].strip()
+        if len(text) < 3:
+            raise forms.ValidationError("Question is too short.")
+        return text
+
+
+class ChoiceForm(forms.ModelForm):
+    class Meta:
+        model = Choice
+        fields = ["text", "is_correct"]
+        widgets = {
+            "text": forms.TextInput(attrs={
+                "class": "input input-sm w-full",
+                "placeholder": "Choice text",
+            }),
+            "is_correct": forms.CheckboxInput(attrs={"class": CHECKBOX}),
+        }
+
+    def clean_text(self):
+        text = self.cleaned_data["text"].strip()
+        if not text:
+            raise forms.ValidationError("Choice cannot be empty.")
+        return text

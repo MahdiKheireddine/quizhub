@@ -1,0 +1,7 @@
+{% for question in quiz.questions.all %}
+  {% include "quizzes/partials/question_card.html" with q=question quiz=quiz %}
+{% empty %}
+  <div role="alert" class="alert">
+    <span>No questions yet — add one below to get started.</span>
+  </div>
+{% endfor %}

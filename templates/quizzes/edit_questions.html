@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Edit questions · {{ quiz.title }} · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-4">
+
+  {# ───── Breadcrumb ───── #}
+  <div class="breadcrumbs text-sm">
+    <ul>
+      <li><a href="{% url 'quizzes:my_quizzes' %}" class="link link-hover">My quizzes</a></li>
+      <li><a href="{% url 'quizzes:detail' slug=quiz.slug %}" class="link link-hover">{{ quiz.title }}</a></li>
+      <li>Edit questions</li>
+    </ul>
+  </div>
+
+  {# ───── Header ───── #}
+  <header class="flex items-end justify-between flex-wrap gap-2">
+    <div>
+      <h1 class="text-3xl font-bold">{{ quiz.title }}</h1>
+      <div class="flex items-center flex-wrap gap-2 mt-1 text-sm opacity-70">
+        <span><strong id="qcount">{{ quiz.question_count }}</strong> questions</span>
+        <span>·</span>
+        <span><strong id="qpoints">{{ quiz.total_points }}</strong> pts</span>
+        <span>·</span>
+        {% if quiz.is_published %}
+          <span class="badge badge-success badge-sm">Published</span>
+        {% else %}
+          <span class="badge badge-ghost badge-sm">Draft</span>
+        {% endif %}
+        <span class="badge badge-outline badge-sm">{{ quiz.get_visibility_display }}</span>
+      </div>
+    </div>
+    <a href="{% url 'quizzes:detail' slug=quiz.slug %}" class="btn btn-ghost btn-sm">← Back to quiz</a>
+  </header>
+
+  
+  <div
+    id="editor"
+    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+    class="space-y-4"
+  >
+
+    <div id="question-list" class="space-y-4">
+      {% include "quizzes/partials/question_list.html" %}
+    </div>
+
+    <div id="new-question-form">
+      {% include "quizzes/partials/new_question_form.html" %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

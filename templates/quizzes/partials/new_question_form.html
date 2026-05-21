@@ -1,0 +1,38 @@
+<div class="card bg-base-100 border border-dashed border-base-300">
+  <div class="card-body p-4">
+    <h3 class="font-semibold text-sm opacity-70">Add a new question</h3>
+    <form
+      hx-post="{% url 'quizzes:question_create' quiz.slug %}"
+      hx-target="#question-list"
+      hx-swap="innerHTML"
+      hx-on::after-request="if (event.detail.successful) this.reset()"
+      class="space-y-2"
+    >
+      <textarea
+        name="text" rows="2" required
+        class="textarea w-full"
+        placeholder="What's the question?"
+      ></textarea>
+      <div class="flex gap-2 items-center flex-wrap">
+        <select name="type" class="select select-sm">
+          <option value="single">Single choice</option>
+          <option value="multiple">Multiple choice</option>
+        </select>
+        <input
+          type="number" name="points" value="1" min="1" max="100"
+          class="input input-sm w-20" placeholder="Points"
+        />
+        <span class="text-xs opacity-60">points</span>
+        <button type="submit" class="btn btn-primary btn-sm ml-auto">+ Add question</button>
+      </div>
+
+      {% if question_form.errors %}
+        <div class="text-error text-xs space-y-1">
+          {% for field, errors in question_form.errors.items %}
+            <p>{{ field }}: {{ errors|join:", " }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </form>
+  </div>
+</div>

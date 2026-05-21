@@ -1,0 +1,76 @@
+<section id="question-{{ q.id }}" class="card bg-base-100 border border-base-300 shadow-sm">
+  <div class="card-body p-4">
+
+    {# ── Header: number + move/delete actions ── #}
+    <div class="flex items-center justify-between gap-2">
+      <span class="badge badge-ghost font-mono">Q{{ forloop.counter|default:q.order }}</span>
+      <div class="flex gap-1">
+        <button
+          class="btn btn-ghost btn-xs"
+          hx-post="{% url 'quizzes:question_move' q.id 'up' %}"
+          hx-target="#question-list"
+          title="Move up"
+        >↑</button>
+        <button
+          class="btn btn-ghost btn-xs"
+          hx-post="{% url 'quizzes:question_move' q.id 'down' %}"
+          hx-target="#question-list"
+          title="Move down"
+        >↓</button>
+        <button
+          class="btn btn-ghost btn-xs text-error"
+          hx-delete="{% url 'quizzes:question_delete' q.id %}"
+          hx-target="#question-{{ q.id }}"
+          hx-swap="delete"
+          hx-confirm="Delete this question and all its choices?"
+          title="Delete question"
+        >✕</button>
+      </div>
+    </div>
+
+    {# ── Inline-edit form: posts on change/blur, returns this card re-rendered ── #}
+    <form
+      hx-post="{% url 'quizzes:question_update' q.id %}"
+      hx-target="#question-{{ q.id }}"
+      hx-swap="outerHTML"
+      hx-trigger="change from:select, change from:input[type=number], blur from:textarea"
+      class="mt-2 space-y-2"
+    >
+      <textarea name="text" rows="2" class="textarea w-full">{{ q.text }}</textarea>
+      <div class="flex gap-2 items-center">
+        <select name="type" class="select select-sm">
+          {% for value, label in q.QuestionType.choices %}
+            <option value="{{ value }}" {% if q.type == value %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <input
+          type="number" name="points" value="{{ q.points }}" min="1" max="100"
+          class="input input-sm w-20"
+        />
+        <span class="text-xs opacity-60">points</span>
+      </div>
+    </form>
+
+    {# ── Choices for this question ── #}
+    <div class="divider my-2 text-xs">Choices</div>
+    <div id="choices-{{ q.id }}">
+      {% include "quizzes/partials/choices_list.html" with q=q %}
+    </div>
+
+    {# ── Add a new choice ── #}
+    <form
+      hx-post="{% url 'quizzes:choice_create' q.id %}"
+      hx-target="#choices-{{ q.id }}"
+      hx-swap="innerHTML"
+      hx-on::after-request="if (event.detail.successful) this.reset()"
+      class="flex gap-2 mt-2"
+    >
+      <input
+        type="text" name="text" placeholder="New choice…" required
+        class="input input-sm w-full"
+      />
+      <button type="submit" class="btn btn-primary btn-sm">+ Add</button>
+    </form>
+
+  </div>
+</section>
