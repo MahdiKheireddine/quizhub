@@ -22,7 +22,7 @@ class QuizForm(forms.ModelForm):
         model = Quiz
         fields = [
             "title", "description", "visibility",
-            "is_active", "closes_at",
+            "is_active", "closes_at", "time_limit_minutes",
             "allow_retakes", "show_results_immediately", "pass_score",
         ]
         widgets = {
@@ -44,6 +44,9 @@ class QuizForm(forms.ModelForm):
             "pass_score": forms.NumberInput(attrs={
                 "class": INPUT, "min": 0, "max": 100, "placeholder": "e.g. 70",
             }),
+            "time_limit_minutes": forms.NumberInput(attrs={
+                "class": INPUT, "min": 1, "max": 480, "placeholder": "e.g. 30",
+            }),
         }
         labels = {
             "is_active": "Currently accepting responses",
@@ -51,10 +54,15 @@ class QuizForm(forms.ModelForm):
             "allow_retakes": "Allow users to retake this quiz",
             "show_results_immediately": "Show users their score immediately after submitting",
             "pass_score": "Pass score (%)",
+            "time_limit_minutes": "Time limit (minutes, optional)",
         }
         help_texts = {
             "visibility": "Public quizzes are visible to all users. Private ones require invitation or approval.",
             "closes_at": "Leave blank for no auto-close. After this datetime the quiz stops accepting responses.",
+            "time_limit_minutes": (
+                "Total time for the whole quiz. Counter starts when the user begins. "
+                "Leave blank for no time limit."
+            ),
         }
 
     def clean_title(self):
@@ -74,6 +82,14 @@ class QuizForm(forms.ModelForm):
         if ps is not None and (ps < 0 or ps > 100):
             raise forms.ValidationError("Pass score must be between 0 and 100.")
         return ps
+
+    def clean_time_limit_minutes(self):
+        val = self.cleaned_data.get("time_limit_minutes")
+        if val is not None and (val < 1 or val > 480):
+            raise forms.ValidationError(
+                "Time limit must be between 1 and 480 minutes (8 hours)."
+            )
+        return val
 
 
 class QuestionForm(forms.ModelForm):

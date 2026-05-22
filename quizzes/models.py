@@ -43,6 +43,13 @@ class Quiz(models.Model):
     is_published = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     closes_at = models.DateTimeField(null=True, blank=True)
+    time_limit_minutes = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text=(
+            "Optional total time limit for the whole quiz, in minutes. "
+            "Leave blank for no timer. The timer starts when the user begins their attempt."
+        ),
+    )
     allow_retakes = models.BooleanField(
         default=False,
         help_text="If true, users can attempt this quiz multiple times.",

@@ -44,6 +44,15 @@
             {% endif %}
           </span>
         </li>
+        {% if quiz.time_limit_minutes %}
+          <li class="flex items-start gap-2">
+            <span class="text-warning mt-0.5">⏱️</span>
+            <span>
+              You'll have <strong>{{ quiz.time_limit_minutes }} minute{{ quiz.time_limit_minutes|pluralize }}</strong> total.
+              Timer starts when you click Start.
+            </span>
+          </li>
+        {% endif %}
         <li class="flex items-start gap-2">
           <span class="text-primary mt-0.5 font-bold">✓</span>
           <span>

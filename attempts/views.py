@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -9,6 +9,7 @@ from quizzes.models import Choice, Question, Quiz
 
 from .models import Answer, Attempt
 from .services import (
+    auto_submit_if_expired,
     can_user_take_quiz,
     get_or_create_in_progress,
     score_attempt,
@@ -52,6 +53,12 @@ def attempt_run(request, attempt_id):
     `?q=` query param selects the index in the shuffled order (0-based).
     """
     attempt = _get_own_attempt(request.user, attempt_id)
+
+    # Server-side enforcement: if the timer has expired, finalize and bounce.
+    if auto_submit_if_expired(attempt):
+        messages.info(request, "Time's up — your attempt was submitted automatically.")
+        return redirect("attempts:result", attempt_id=attempt.id)
+
     if attempt.is_finished:
         return redirect("attempts:result", attempt_id=attempt.id)
 
@@ -90,6 +97,9 @@ def attempt_run(request, attempt_id):
         "is_first": idx == 0,
         "is_last": idx == len(questions) - 1,
         "answered_count": len(answered_qids),
+        # Timer context
+        "has_timer": attempt.time_limit_expires_at is not None,
+        "time_remaining_seconds": attempt.time_remaining_seconds,
     })
 
 
@@ -104,6 +114,10 @@ def answer_save(request, attempt_id, question_id):
     if attempt.is_finished:
         # 409 Conflict — the attempt is locked, the client shouldn't try to write.
         return HttpResponse("", status=409)
+
+    # If time ran out between the user clicking and this request landing, finalize.
+    if auto_submit_if_expired(attempt):
+        return HttpResponse("Time expired", status=410)
 
     question = get_object_or_404(Question, id=question_id, quiz=attempt.quiz)
 
@@ -131,6 +145,10 @@ def answer_save(request, attempt_id, question_id):
 def attempt_submit_confirm(request, attempt_id):
     """Confirmation screen before final submission."""
     attempt = _get_own_attempt(request.user, attempt_id)
+
+    if auto_submit_if_expired(attempt):
+        return redirect("attempts:result", attempt_id=attempt.id)
+
     if attempt.is_finished:
         return redirect("attempts:result", attempt_id=attempt.id)
 
@@ -171,4 +189,29 @@ def attempt_result(request, attempt_id):
     return render(request, "attempts/attempt_result.html", {
         "attempt": attempt,
         "quiz": attempt.quiz,
+    })
+
+
+@login_required
+def attempt_heartbeat(request, attempt_id):
+    """Return time remaining for the attempt.
+
+    The client polls this every ~10s to stay synced with the server. Also
+    doubles as a safety net — if we detect expiry here, we finalize server-side
+    before responding, and the client sees `finished: true` and redirects.
+    """
+    attempt = _get_own_attempt(request.user, attempt_id)
+
+    if attempt.is_finished:
+        return JsonResponse({"finished": True, "remaining": 0})
+
+    if attempt.time_limit_expires_at is None:
+        return JsonResponse({"finished": False, "remaining": None})
+
+    if auto_submit_if_expired(attempt):
+        return JsonResponse({"finished": True, "remaining": 0})
+
+    return JsonResponse({
+        "finished": False,
+        "remaining": attempt.time_remaining_seconds,
     })

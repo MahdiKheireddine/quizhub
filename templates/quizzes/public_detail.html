@@ -116,6 +116,14 @@
 
           <ul class="text-sm space-y-1 opacity-80">
             <li>
+              <span class="opacity-70">Time limit:</span>
+              {% if quiz.time_limit_minutes %}
+                <span class="text-warning font-medium">⏱️ {{ quiz.time_limit_minutes }} minute{{ quiz.time_limit_minutes|pluralize }}</span>
+              {% else %}
+                no limit
+              {% endif %}
+            </li>
+            <li>
               <span class="opacity-70">Retakes:</span>
               {% if quiz.allow_retakes %}allowed{% else %}one attempt only{% endif %}
             </li>

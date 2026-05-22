@@ -5,6 +5,7 @@ admin actions, or future API endpoints.
 """
 
 import random
+from datetime import timedelta
 
 from django.db import transaction
 from django.utils import timezone
@@ -15,16 +16,23 @@ from .models import Attempt
 
 
 def start_attempt(user, quiz):
-    """Create a new in-progress Attempt with a shuffled question order.
+    """Create a new in-progress Attempt with a shuffled question order and,
+    if the quiz has a time limit, a server-enforced expiry timestamp.
 
     Caller is responsible for verifying access first (see can_user_take_quiz).
     """
     question_ids = list(quiz.questions.values_list("id", flat=True))
     random.shuffle(question_ids)
+
+    expires_at = None
+    if quiz.time_limit_minutes:
+        expires_at = timezone.now() + timedelta(minutes=quiz.time_limit_minutes)
+
     return Attempt.objects.create(
         user=user,
         quiz=quiz,
         question_order=question_ids,
+        time_limit_expires_at=expires_at,
     )
 
 
@@ -93,6 +101,27 @@ def can_user_take_quiz(user, quiz):
         return False, "You've already taken this quiz and retakes aren't allowed."
 
     return True, ""
+
+
+def auto_submit_if_expired(attempt):
+    """If an attempt's timer has expired and it's still in progress, finalize it.
+
+    This is the SAFETY NET. It's called from multiple entry points (runner view,
+    answer save, heartbeat, submit_confirm) so no matter how a request lands on
+    the server, an expired attempt gets finalized.
+
+    Returns True if we auto-submitted in this call, False otherwise. Idempotent.
+    """
+    if attempt.status != Attempt.Status.IN_PROGRESS:
+        return False
+    if not attempt.is_time_expired:
+        return False
+
+    attempt.status = Attempt.Status.SUBMITTED
+    attempt.submitted_at = timezone.now()
+    attempt.save(update_fields=["status", "submitted_at"])
+    score_attempt(attempt)
+    return True
 
 
 def get_or_create_in_progress(user, quiz):

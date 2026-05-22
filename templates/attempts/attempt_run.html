@@ -10,8 +10,37 @@
 
   <div class="grid lg:grid-cols-3 gap-6">
 
-    {# ───── Sidebar: progress + jump dots ───── #}
+    {# ───── Sidebar: timer + progress + jump dots ───── #}
     <aside class="lg:sticky lg:top-20 self-start">
+
+      {% if has_timer %}
+        <div
+          x-data="quizTimer({
+            initial: {{ time_remaining_seconds }},
+            heartbeatUrl: '{% url 'attempts:heartbeat' attempt.id %}',
+            submitUrl: '{% url 'attempts:submit' attempt.id %}',
+            csrfToken: '{{ csrf_token }}',
+          })"
+          x-init="start()"
+          class="card bg-base-200 border mb-4"
+          :class="warning ? 'border-warning' : 'border-base-300'"
+        >
+          <div class="card-body p-4 text-center">
+            <div class="text-xs uppercase tracking-wide opacity-60">Time remaining</div>
+            <div
+              class="text-3xl font-mono font-bold mt-1"
+              :class="warning ? 'text-warning animate-pulse' : ''"
+              x-text="formatted"
+            >
+              --:--
+            </div>
+            <div x-show="warning" x-cloak class="text-xs text-warning mt-1">
+              Less than 1 minute!
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
       <div class="card bg-base-100 border border-base-300">
         <div class="card-body p-4">
           <p class="text-sm opacity-70">Quiz</p>
@@ -129,4 +158,91 @@
 
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+  [x-cloak] { display: none !important; }
+</style>
+<script>
+function quizTimer({ initial, heartbeatUrl, submitUrl, csrfToken }) {
+  return {
+    remaining: initial,    // seconds left, per server
+    warning: false,
+    formatted: '--:--',
+    heartbeatInterval: null,
+    tickInterval: null,
+
+    start() {
+      this.updateDisplay();
+
+      // Local tick: count down by 1s for a smooth display.
+      this.tickInterval = setInterval(() => {
+        if (this.remaining > 0) {
+          this.remaining -= 1;
+          this.updateDisplay();
+        }
+        if (this.remaining <= 0) {
+          this.handleExpiry();
+        }
+      }, 1000);
+
+      // Server heartbeat: resync every 10s with the source of truth.
+      this.heartbeatInterval = setInterval(() => this.heartbeat(), 10_000);
+
+      // Resync when the tab becomes visible — covers the case where the user
+      // backgrounded the tab and the local tick was throttled by the browser.
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) this.heartbeat();
+      });
+    },
+
+    updateDisplay() {
+      const m = Math.floor(this.remaining / 60);
+      const s = this.remaining % 60;
+      this.formatted = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      this.warning = this.remaining > 0 && this.remaining <= 60;
+    },
+
+    async heartbeat() {
+      try {
+        const res = await fetch(heartbeatUrl, { credentials: 'same-origin' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.finished) {
+          this.handleExpiry();
+          return;
+        }
+        if (data.remaining !== null) {
+          // Resync to server's number; the local tick was a courtesy.
+          this.remaining = data.remaining;
+          this.updateDisplay();
+        }
+      } catch (e) {
+        // Network blip — keep ticking locally. Next heartbeat will resync.
+      }
+    },
+
+    handleExpiry() {
+      clearInterval(this.tickInterval);
+      clearInterval(this.heartbeatInterval);
+      this.remaining = 0;
+      this.updateDisplay();
+
+      // POST to finalize. The server has already (or will) auto-finalize via
+      // auto_submit_if_expired; the POST is so the user lands on the result page.
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = submitUrl;
+      const csrf = document.createElement('input');
+      csrf.type = 'hidden';
+      csrf.name = 'csrfmiddlewaretoken';
+      csrf.value = csrfToken;
+      form.appendChild(csrf);
+      document.body.appendChild(form);
+      form.submit();
+    },
+  };
+}
+</script>
 {% endblock %}

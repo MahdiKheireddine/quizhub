@@ -11,6 +11,7 @@ on the fly (Quiz contents could change after an Attempt is graded).
 """
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from quizzes.models import Choice, Question, Quiz
 
@@ -37,6 +38,10 @@ class Attempt(models.Model):
     score = models.PositiveIntegerField(default=0)
     max_score = models.PositiveIntegerField(default=0)
 
+    # Server's source of truth for when this attempt expires.
+    # Set at attempt creation when the quiz has a time limit; null means no limit.
+    time_limit_expires_at = models.DateTimeField(null=True, blank=True)
+
     started_at = models.DateTimeField(auto_now_add=True)
     submitted_at = models.DateTimeField(null=True, blank=True)
     graded_at = models.DateTimeField(null=True, blank=True)
@@ -54,6 +59,20 @@ class Attempt(models.Model):
     @property
     def is_finished(self):
         return self.status != self.Status.IN_PROGRESS
+
+    @property
+    def time_remaining_seconds(self):
+        """Seconds until the timer expires. Returns None if no limit. Floors at 0."""
+        if not self.time_limit_expires_at:
+            return None
+        delta = self.time_limit_expires_at - timezone.now()
+        return max(0, int(delta.total_seconds()))
+
+    @property
+    def is_time_expired(self):
+        if not self.time_limit_expires_at:
+            return False
+        return timezone.now() >= self.time_limit_expires_at
 
     @property
     def score_percent(self):
