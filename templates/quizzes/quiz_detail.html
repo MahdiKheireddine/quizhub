@@ -41,6 +41,11 @@
             <span class="badge badge-outline">{{ quiz.get_visibility_display }}</span>
           </div>
         </div>
+        {% if quiz.is_published and quiz.visibility == 'public' %}
+          <a href="{% url 'quizzes:public_detail' slug=quiz.slug %}" class="link link-hover text-sm whitespace-nowrap">
+            View public page &rarr;
+          </a>
+        {% endif %}
       </div>
 
       {% if quiz.description %}

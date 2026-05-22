@@ -1,0 +1,24 @@
+<a href="{% url 'quizzes:public_detail' quiz.slug %}"
+   class="card bg-base-100 border border-base-300 hover:shadow-lg transition-shadow hover:-translate-y-0.5 group">
+  <div class="card-body p-4">
+    <div class="flex flex-wrap gap-1 mb-1">
+      {% if quiz.is_accepting_responses %}
+        <span class="badge badge-success badge-sm">Open</span>
+      {% else %}
+        <span class="badge badge-ghost badge-sm">Closed</span>
+      {% endif %}
+      {% if quiz.visibility == 'private' %}
+        <span class="badge badge-outline badge-sm">Private</span>
+      {% endif %}
+      <span class="badge badge-outline badge-sm">
+        {{ quiz.question_count }} Q &middot; {{ quiz.total_points }} pts
+      </span>
+    </div>
+    <h3 class="card-title text-base group-hover:text-primary transition">{{ quiz.title }}</h3>
+    <p class="text-sm opacity-70 line-clamp-2">{{ quiz.description|default:"No description." }}</p>
+    <div class="flex items-center gap-2 mt-2 text-xs opacity-60">
+      <span>by <span class="font-medium">{{ quiz.creator.username }}</span></span>
+      <span class="ml-auto">{{ quiz.created_at|date:"M j, Y" }}</span>
+    </div>
+  </div>
+</a>

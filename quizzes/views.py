@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import Count, Max, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST, require_http_methods
 
 from .forms import ChoiceForm, QuestionForm, QuizForm
 from .models import Choice, Question, Quiz
+from .queries import public_browse_queryset, visible_quizzes
 
 
 def _require_creator(user):
@@ -271,3 +272,39 @@ def choice_delete(request, choice_id):
     question = c.question
     c.delete()
     return render(request, "quizzes/partials/choices_list.html", {"q": question})
+
+
+# ─── Public browse + detail ─────────────────────────────────────────────
+
+def browse_quizzes(request):
+    """Public list of all published public quizzes. No auth required."""
+    qs = public_browse_queryset()
+
+    q = request.GET.get("q", "").strip()
+    if q:
+        qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+
+    sort = request.GET.get("sort", "recent")
+    if sort == "popular":
+        qs = qs.annotate(invites=Count("invitations")).order_by("-invites", "-created_at")
+    elif sort == "alpha":
+        qs = qs.order_by("title")
+    else:
+        qs = qs.order_by("-created_at")
+
+    return render(request, "quizzes/browse.html", {
+        "quizzes": qs[:60],  # cap to 60; pagination is a later concern
+        "q": q,
+        "sort": sort,
+    })
+
+
+def public_quiz_detail(request, slug):
+    """Public detail view for one quiz. Available to anyone allowed to see it.
+
+    Different from the creator's /my/quizzes/<slug>/ which is the editing view.
+    Uses visible_quizzes() so users invited to private quizzes can hit this
+    page via a direct link too.
+    """
+    quiz = get_object_or_404(visible_quizzes(request.user), slug=slug)
+    return render(request, "quizzes/public_detail.html", {"quiz": quiz})

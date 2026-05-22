@@ -1,11 +1,12 @@
 <nav class="navbar bg-base-100 shadow-sm sticky top-0 z-40 backdrop-blur bg-opacity-90">
   <div class="container mx-auto px-2 flex w-full items-center">
 
-    {# ---- Left: brand ---- #}
-    <div class="flex-1">
+    {# ---- Left: brand + browse ---- #}
+    <div class="flex-1 flex items-center gap-1">
       <a href="{% url 'core:home' %}" class="btn btn-ghost text-xl text-primary font-bold">
         {{ SITE_NAME }}
       </a>
+      <a href="{% url 'quizzes:browse' %}" class="btn btn-ghost btn-sm">Browse</a>
     </div>
 
     {# ---- Right: theme switcher + auth ---- #}

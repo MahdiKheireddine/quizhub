@@ -5,6 +5,10 @@ from . import views
 app_name = "quizzes"
 
 urlpatterns = [
+    # Public browse + public detail
+    path("q/", views.browse_quizzes, name="browse"),
+    path("q/<slug:slug>/", views.public_quiz_detail, name="public_detail"),
+
     # Creator dashboard
     path("my/quizzes/", views.my_quizzes, name="my_quizzes"),
     path("my/quizzes/new/", views.quiz_create, name="quiz_create"),
