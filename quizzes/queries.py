@@ -45,3 +45,37 @@ def public_browse_queryset():
         Quiz.objects.filter(is_published=True, visibility=Quiz.Visibility.PUBLIC)
         .select_related("creator")
     )
+
+
+def user_invitation_for(user, quiz):
+    """Return the Invitation row for this user + quiz, or None.
+
+    Returns ANY invitation regardless of status (pending/accepted/declined) —
+    matches the visibility rule that a user who's been invited at all has
+    visibility on the quiz.
+    """
+    if not user.is_authenticated:
+        return None
+    return quiz.invitations.filter(invited_user=user).first()
+
+
+def user_pending_join_request_for(user, quiz):
+    """Return the user's PENDING join request for this quiz, or None."""
+    if not user.is_authenticated:
+        return None
+    # Import locally to avoid a circular import at module load time.
+    from .models import JoinRequest
+    return quiz.join_requests.filter(
+        user=user, status=JoinRequest.Status.PENDING
+    ).first()
+
+
+def user_can_access_private_quiz(user, quiz):
+    """Whether `user` is allowed access to `quiz`, regardless of whether they've
+    taken it yet. Creators of the quiz always count.
+    """
+    if not user.is_authenticated:
+        return False
+    if user == quiz.creator:
+        return True
+    return quiz.invitations.filter(invited_user=user).exists()

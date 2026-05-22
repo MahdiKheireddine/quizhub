@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Request access · {{ quiz.title }} · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <div class="card bg-base-100 shadow-xl border border-base-300">
+    <div class="card-body">
+      <h1 class="text-2xl font-bold">Request access</h1>
+      <p class="text-sm opacity-80">
+        &ldquo;<a href="{% url 'quizzes:public_detail' slug=quiz.slug %}" class="link link-hover font-medium">{{ quiz.title }}</a>&rdquo;
+        is a private quiz by
+        <a href="{% url 'accounts:creator_profile' quiz.creator.username %}" class="link link-hover font-medium">{{ quiz.creator.username }}</a>.
+        Send a request to take it.
+      </p>
+
+      <form method="post" action="{% url 'quizzes:request_join' slug=quiz.slug %}" class="mt-4 space-y-4">
+        {% csrf_token %}
+
+        <div x-data="{ count: '{{ form.message.value|default:'' }}'.length }">
+          <fieldset class="fieldset w-full">
+            <legend class="fieldset-legend">{{ form.message.label }}</legend>
+            <textarea
+              name="{{ form.message.name }}"
+              id="{{ form.message.id_for_label }}"
+              rows="3"
+              maxlength="300"
+              placeholder="Optional: a short note to the creator (why you want to take this quiz)."
+              @input="count = $event.target.value.length"
+              class="textarea w-full{% if form.message.errors %} textarea-error{% endif %}"
+            >{% if form.message.value %}{{ form.message.value }}{% endif %}</textarea>
+            <div class="fieldset-label flex justify-between mt-1">
+              <span class="opacity-70">Optional. Max 300 characters.</span>
+              <span x-text="count + ' / 300'" :class="count > 280 ? 'text-warning' : 'opacity-70'"></span>
+            </div>
+            {% for e in form.message.errors %}
+              <p class="fieldset-label text-error">{{ e }}</p>
+            {% endfor %}
+          </fieldset>
+        </div>
+
+        <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <a href="{% url 'quizzes:public_detail' slug=quiz.slug %}" class="btn btn-ghost">Cancel</a>
+          <button type="submit" class="btn btn-primary">Send request</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

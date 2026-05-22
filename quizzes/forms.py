@@ -1,7 +1,10 @@
 from django import forms
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from .models import Choice, Question, Quiz
+from .models import Choice, Invitation, JoinRequest, Question, Quiz
+
+User = get_user_model()
 
 
 # Reusable daisyUI v5 classes. `input`, `textarea`, `select` are bordered by
@@ -112,3 +115,49 @@ class ChoiceForm(forms.ModelForm):
         if not text:
             raise forms.ValidationError("Choice cannot be empty.")
         return text
+
+
+class InviteUserForm(forms.Form):
+    """Creator side: invite someone by username to take a private quiz."""
+
+    username = forms.CharField(
+        max_length=150,
+        widget=forms.TextInput(attrs={
+            "class": INPUT,
+            "placeholder": "Username",
+            "autocomplete": "off",
+        }),
+    )
+
+    def __init__(self, *args, quiz=None, **kwargs):
+        self.quiz = quiz
+        super().__init__(*args, **kwargs)
+
+    def clean_username(self):
+        username = self.cleaned_data["username"].strip()
+        try:
+            user = User.objects.get(username__iexact=username)
+        except User.DoesNotExist:
+            raise forms.ValidationError("No user with that username.")
+        if self.quiz and user == self.quiz.creator:
+            raise forms.ValidationError("You can't invite yourself to your own quiz.")
+        if self.quiz and Invitation.objects.filter(quiz=self.quiz, invited_user=user).exists():
+            raise forms.ValidationError(f"{user.username} is already invited.")
+        self.cleaned_data["user"] = user
+        return username
+
+
+class JoinRequestForm(forms.ModelForm):
+    """User side: request access to a private quiz with an optional message."""
+
+    class Meta:
+        model = JoinRequest
+        fields = ["message"]
+        widgets = {
+            "message": forms.Textarea(attrs={
+                "class": TEXTAREA, "rows": 3,
+                "placeholder": "Optional: a short note to the creator (why you want to take this quiz).",
+                "maxlength": 300,
+            }),
+        }
+        labels = {"message": "Message (optional)"}

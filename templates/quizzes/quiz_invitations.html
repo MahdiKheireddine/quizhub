@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Invitations · {{ quiz.title }} · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  {# ───── Breadcrumb ───── #}
+  <div class="breadcrumbs text-sm">
+    <ul>
+      <li><a href="{% url 'quizzes:my_quizzes' %}" class="link link-hover">My quizzes</a></li>
+      <li><a href="{% url 'quizzes:detail' slug=quiz.slug %}" class="link link-hover">{{ quiz.title }}</a></li>
+      <li>Invitations</li>
+    </ul>
+  </div>
+
+  <header>
+    <h1 class="text-3xl font-bold">Invitations &amp; access</h1>
+    <p class="text-sm opacity-70">{{ quiz.title }}</p>
+  </header>
+
+  {% if quiz.visibility != 'private' %}
+    <div role="alert" class="alert alert-warning">
+      <span>
+        This quiz is public — invitations aren't required. Switch its visibility to private to use this feature.
+      </span>
+    </div>
+  {% endif %}
+
+  <div class="grid lg:grid-cols-2 gap-6">
+
+    {# ───── Left column: invite users + sent invitations ───── #}
+    <section>
+      <div class="card bg-base-100 border border-base-300">
+        <div class="card-body">
+          <h2 class="card-title text-lg">Invite a user</h2>
+          <p class="text-sm opacity-70">They'll be able to see and take this quiz once invited.</p>
+
+          <form method="post" class="mt-4 flex flex-col sm:flex-row gap-2">
+            {% csrf_token %}
+            <div class="flex-1">
+              {{ form.username }}
+              {% for e in form.username.errors %}
+                <p class="text-error text-xs mt-1">{{ e }}</p>
+              {% endfor %}
+            </div>
+            <button type="submit" class="btn btn-primary">+ Send invitation</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="divider text-xs opacity-70 uppercase tracking-wide">Sent invitations</div>
+
+      {% if invitations %}
+        <ul class="space-y-2">
+          {% for inv in invitations %}
+            <li class="card bg-base-100 border border-base-300">
+              <div class="card-body py-3 px-4">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                  <div class="min-w-0">
+                    <p class="font-semibold">{{ inv.invited_user.username }}</p>
+                    <p class="text-xs opacity-60">
+                      Invited {{ inv.created_at|timesince }} ago
+                      {% if inv.responded_at %}· responded {{ inv.responded_at|timesince }} ago{% endif %}
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    {% if inv.status == 'pending' %}
+                      <span class="badge badge-warning">Pending</span>
+                    {% elif inv.status == 'accepted' %}
+                      <span class="badge badge-success">Accepted</span>
+                    {% else %}
+                      <span class="badge badge-ghost">Declined</span>
+                    {% endif %}
+
+                    {% if inv.status == 'pending' %}
+                      <form method="post" action="{% url 'quizzes:invitation_cancel' inv.id %}" class="contents">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-ghost btn-xs text-error">Cancel</button>
+                      </form>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-sm opacity-70">No invitations sent yet.</p>
+      {% endif %}
+    </section>
+
+    {# ───── Right column: pending join requests + recently reviewed ───── #}
+    <section>
+      <div class="card bg-base-100 border border-base-300">
+        <div class="card-body">
+          <h2 class="card-title text-lg">
+            Pending requests
+            <span class="badge {% if pending_requests %}badge-warning{% else %}badge-ghost{% endif %}">{{ pending_requests|length }}</span>
+          </h2>
+
+          {% if pending_requests %}
+            <ul class="space-y-3 mt-2">
+              {% for jr in pending_requests %}
+                <li class="rounded-lg border border-base-300 p-3">
+                  <div class="flex items-start justify-between gap-2 flex-wrap">
+                    <div class="min-w-0">
+                      <p class="font-semibold">{{ jr.user.username }}</p>
+                      <p class="text-xs opacity-60">Requested {{ jr.created_at|timesince }} ago</p>
+                    </div>
+                  </div>
+                  {% if jr.message %}
+                    <blockquote class="border-l-4 border-primary pl-3 mt-2 text-sm italic whitespace-pre-wrap">{{ jr.message }}</blockquote>
+                  {% endif %}
+                  <div class="flex gap-2 justify-end mt-2">
+                    <form method="post" action="{% url 'quizzes:join_request_review' jr.id 'reject' %}" class="contents">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-error btn-sm">Reject</button>
+                    </form>
+                    <form method="post" action="{% url 'quizzes:join_request_review' jr.id 'approve' %}" class="contents">
+                      {% csrf_token %}
+                      <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                    </form>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-sm opacity-70">No pending requests.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if recent_reviewed %}
+        <details class="collapse collapse-arrow bg-base-100 border border-base-300 mt-3">
+          <summary class="collapse-title text-sm font-medium">Recently reviewed</summary>
+          <div class="collapse-content">
+            <ul class="text-sm space-y-1">
+              {% for jr in recent_reviewed %}
+                <li class="flex items-center justify-between gap-2 flex-wrap">
+                  <span class="truncate">
+                    <span class="font-medium">{{ jr.user.username }}</span>
+                    {% if jr.status == 'approved' %}
+                      <span class="badge badge-success badge-sm">Approved</span>
+                    {% else %}
+                      <span class="badge badge-error badge-sm">Rejected</span>
+                    {% endif %}
+                  </span>
+                  <span class="text-xs opacity-60 whitespace-nowrap">
+                    by {{ jr.reviewed_by.username|default:"—" }} · {{ jr.reviewed_at|date:"M j, Y" }}
+                  </span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </details>
+      {% endif %}
+    </section>
+
+  </div>
+</div>
+{% endblock %}

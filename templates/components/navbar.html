@@ -71,6 +71,8 @@
               <li><a href="{% url 'quizzes:my_quizzes' %}">📋 My quizzes</a></li>
               <li><a href="{% url 'accounts:creator_profile' user.username %}">My public profile</a></li>
             {% endif %}
+            <li><a href="{% url 'quizzes:my_invitations' %}">My invitations</a></li>
+            <li><a href="{% url 'quizzes:my_join_requests' %}">My access requests</a></li>
             <li><a href="/accounts/email/">Manage email</a></li>
             {% if not user.can_create_quizzes %}
               <li><a href="{% url 'accounts:request_creator' %}">Become a creator</a></li>

@@ -62,6 +62,15 @@
       <div class="flex flex-wrap gap-2 mt-3">
         <a href="{% url 'quizzes:quiz_edit' slug=quiz.slug %}" class="btn btn-ghost btn-sm">Edit details</a>
 
+        {% if quiz.visibility == 'private' %}
+          <a href="{% url 'quizzes:quiz_invitations' slug=quiz.slug %}" class="btn btn-ghost btn-sm">
+            Manage access
+            {% if pending_join_requests_count %}
+              <span class="badge badge-warning badge-sm ml-1">{{ pending_join_requests_count }}</span>
+            {% endif %}
+          </a>
+        {% endif %}
+
         {# Toggle publish — `contents` lets the form disappear from layout so the button flows in the flex row #}
         <form method="post" action="{% url 'quizzes:quiz_toggle_publish' slug=quiz.slug %}" class="contents">
           {% csrf_token %}

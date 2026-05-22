@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Invitations · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-4">
+
+  <header>
+    <h1 class="text-3xl font-bold">Invitations</h1>
+    <p class="text-sm opacity-70">Quizzes you've been invited to take.</p>
+  </header>
+
+  {% if not invitations %}
+    <div class="card bg-base-100 border border-base-300">
+      <div class="card-body items-center text-center py-12">
+        <div class="text-5xl">📨</div>
+        <p class="opacity-70">
+          No invitations yet. When a creator invites you to a private quiz, it'll show up here.
+        </p>
+      </div>
+    </div>
+  {% else %}
+    <ul class="space-y-3">
+      {% for inv in invitations %}
+        <li class="card bg-base-100 border border-base-300">
+          <div class="card-body py-4 px-5">
+            <div class="flex items-start justify-between gap-3 flex-wrap">
+              <div class="min-w-0">
+                <a href="{% url 'quizzes:public_detail' slug=inv.quiz.slug %}" class="link link-hover font-semibold">{{ inv.quiz.title }}</a>
+                <p class="text-xs opacity-70">
+                  Invited by
+                  <a href="{% url 'accounts:creator_profile' inv.invited_by.username %}" class="link link-hover">{{ inv.invited_by.username|default:"a creator" }}</a>
+                  · {{ inv.created_at|timesince }} ago
+                </p>
+              </div>
+              <div class="flex items-center gap-2 flex-wrap">
+                {% if inv.status == 'pending' %}
+                  <span class="badge badge-warning">Pending</span>
+                  <form method="post" action="{% url 'quizzes:invitation_respond' inv.id 'decline' %}" class="contents">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ghost btn-sm">Decline</button>
+                  </form>
+                  <form method="post" action="{% url 'quizzes:invitation_respond' inv.id 'accept' %}" class="contents">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success btn-sm">Accept</button>
+                  </form>
+                {% elif inv.status == 'accepted' %}
+                  <span class="badge badge-success">Accepted</span>
+                  <a href="{% url 'quizzes:public_detail' slug=inv.quiz.slug %}" class="btn btn-primary btn-sm">Take quiz</a>
+                {% else %}
+                  <span class="badge badge-ghost">Declined</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+</div>
+{% endblock %}

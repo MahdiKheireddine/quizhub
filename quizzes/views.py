@@ -3,14 +3,20 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Count, Max, Q
-from django.http import HttpResponse
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
+from django.utils import timezone
 from django.views.decorators.http import require_POST, require_http_methods
 
-from .forms import ChoiceForm, QuestionForm, QuizForm
-from .models import Choice, Question, Quiz
-from .queries import public_browse_queryset, visible_quizzes
+from .forms import ChoiceForm, InviteUserForm, JoinRequestForm, QuestionForm, QuizForm
+from .models import Choice, Invitation, JoinRequest, Question, Quiz
+from .queries import (
+    public_browse_queryset,
+    user_can_access_private_quiz,
+    user_pending_join_request_for,
+    visible_quizzes,
+)
 
 
 def _require_creator(user):
@@ -58,7 +64,13 @@ def quiz_create(request):
 def quiz_detail(request, slug):
     """Creator's view of their own quiz. Public/take-quiz view comes in commit 12."""
     quiz = _get_own_quiz(request.user, slug)
-    return render(request, "quizzes/quiz_detail.html", {"quiz": quiz})
+    pending_join_requests_count = quiz.join_requests.filter(
+        status=JoinRequest.Status.PENDING
+    ).count()
+    return render(request, "quizzes/quiz_detail.html", {
+        "quiz": quiz,
+        "pending_join_requests_count": pending_join_requests_count,
+    })
 
 
 @login_required
@@ -300,11 +312,210 @@ def browse_quizzes(request):
 
 
 def public_quiz_detail(request, slug):
-    """Public detail view for one quiz. Available to anyone allowed to see it.
+    """Public detail view for one quiz.
 
-    Different from the creator's /my/quizzes/<slug>/ which is the editing view.
-    Uses visible_quizzes() so users invited to private quizzes can hit this
-    page via a direct link too.
+    Visibility rule for this view (more permissive than `visible_quizzes`, which
+    is used for listing contexts like profile pages):
+      - Public + published → visible to everyone.
+      - Private + published → visible to any authenticated viewer; the sidebar
+        UI shows the right action (Take quiz / Request access / pending).
+      - Private + anonymous → 404, so we don't leak that the quiz exists.
+    Drafts always 404 here regardless of viewer.
     """
-    quiz = get_object_or_404(visible_quizzes(request.user), slug=slug)
-    return render(request, "quizzes/public_detail.html", {"quiz": quiz})
+    quiz = get_object_or_404(
+        Quiz.objects.filter(is_published=True).select_related("creator"),
+        slug=slug,
+    )
+    if quiz.visibility == Quiz.Visibility.PRIVATE and not request.user.is_authenticated:
+        raise Http404
+
+    return render(request, "quizzes/public_detail.html", {
+        "quiz": quiz,
+        "user_can_access": user_can_access_private_quiz(request.user, quiz),
+        "user_pending_request": user_pending_join_request_for(request.user, quiz),
+    })
+
+
+# ─── Invitations & join requests: creator side ──────────────────────────
+
+@login_required
+def quiz_invitations(request, slug):
+    """Creator-only page to manage invitations + join requests for a quiz."""
+    quiz = _get_own_quiz(request.user, slug)
+
+    if request.method == "POST":
+        form = InviteUserForm(request.POST, quiz=quiz)
+        if form.is_valid():
+            user = form.cleaned_data["user"]
+            Invitation.objects.create(
+                quiz=quiz,
+                invited_user=user,
+                invited_by=request.user,
+                status=Invitation.Status.PENDING,
+            )
+            messages.success(request, f"Invited {user.username}.")
+            return redirect("quizzes:quiz_invitations", slug=quiz.slug)
+    else:
+        form = InviteUserForm(quiz=quiz)
+
+    invitations = (
+        quiz.invitations
+        .select_related("invited_user", "invited_by")
+        .order_by("-created_at")
+    )
+    pending_requests = (
+        quiz.join_requests
+        .filter(status=JoinRequest.Status.PENDING)
+        .select_related("user")
+    )
+    recent_reviewed = (
+        quiz.join_requests
+        .exclude(status=JoinRequest.Status.PENDING)
+        .select_related("user", "reviewed_by")
+        .order_by("-reviewed_at")[:10]
+    )
+
+    return render(request, "quizzes/quiz_invitations.html", {
+        "quiz": quiz,
+        "form": form,
+        "invitations": invitations,
+        "pending_requests": pending_requests,
+        "recent_reviewed": recent_reviewed,
+    })
+
+
+@login_required
+@require_POST
+def invitation_cancel(request, invitation_id):
+    inv = get_object_or_404(
+        Invitation.objects.select_related("quiz"),
+        id=invitation_id,
+        quiz__creator=request.user,
+    )
+    quiz = inv.quiz
+    invited_username = inv.invited_user.username
+    inv.delete()
+    messages.info(request, f"Invitation for {invited_username} cancelled.")
+    return redirect("quizzes:quiz_invitations", slug=quiz.slug)
+
+
+@login_required
+@require_POST
+def join_request_review(request, join_request_id, action):
+    """Approve or reject a pending join request. Only the quiz's creator can act."""
+    jr = get_object_or_404(
+        JoinRequest.objects.select_related("quiz", "user"),
+        id=join_request_id,
+        quiz__creator=request.user,
+    )
+    if jr.status != JoinRequest.Status.PENDING:
+        messages.error(request, "This request has already been resolved.")
+        return redirect("quizzes:quiz_invitations", slug=jr.quiz.slug)
+
+    if action == "approve":
+        with transaction.atomic():
+            jr.status = JoinRequest.Status.APPROVED
+            jr.reviewed_by = request.user
+            jr.reviewed_at = timezone.now()
+            jr.save(update_fields=["status", "reviewed_by", "reviewed_at"])
+            # Grant access by creating an ACCEPTED invitation if one doesn't exist.
+            Invitation.objects.get_or_create(
+                quiz=jr.quiz,
+                invited_user=jr.user,
+                defaults={
+                    "invited_by": request.user,
+                    "status": Invitation.Status.ACCEPTED,
+                    "responded_at": timezone.now(),
+                },
+            )
+        messages.success(request, f"Approved {jr.user.username}'s request.")
+    elif action == "reject":
+        jr.status = JoinRequest.Status.REJECTED
+        jr.reviewed_by = request.user
+        jr.reviewed_at = timezone.now()
+        jr.save(update_fields=["status", "reviewed_by", "reviewed_at"])
+        messages.info(request, f"Rejected {jr.user.username}'s request.")
+    else:
+        messages.error(request, "Invalid action.")
+
+    return redirect("quizzes:quiz_invitations", slug=jr.quiz.slug)
+
+
+# ─── Invitations & join requests: user side ─────────────────────────────
+
+@login_required
+def my_invitations(request):
+    """User's incoming invitations."""
+    invitations = (
+        request.user.quiz_invitations
+        .select_related("quiz", "quiz__creator", "invited_by")
+        .order_by("-created_at")
+    )
+    return render(request, "quizzes/my_invitations.html", {"invitations": invitations})
+
+
+@login_required
+@require_POST
+def invitation_respond(request, invitation_id, action):
+    """User accepts or declines their own invitation."""
+    inv = get_object_or_404(Invitation, id=invitation_id, invited_user=request.user)
+
+    if action == "accept":
+        inv.status = Invitation.Status.ACCEPTED
+    elif action == "decline":
+        inv.status = Invitation.Status.DECLINED
+    else:
+        messages.error(request, "Invalid action.")
+        return redirect("quizzes:my_invitations")
+
+    inv.responded_at = timezone.now()
+    inv.save(update_fields=["status", "responded_at"])
+    messages.success(request, f"Invitation {action}ed.")
+    return redirect("quizzes:my_invitations")
+
+
+@login_required
+def my_join_requests(request):
+    """User's outgoing join requests."""
+    requests_qs = (
+        request.user.quiz_join_requests
+        .select_related("quiz", "quiz__creator", "reviewed_by")
+        .order_by("-created_at")
+    )
+    return render(request, "quizzes/my_join_requests.html", {"join_requests": requests_qs})
+
+
+@login_required
+def request_join(request, slug):
+    """User-side: request access to a private quiz."""
+    quiz = get_object_or_404(
+        Quiz,
+        slug=slug,
+        is_published=True,
+        visibility=Quiz.Visibility.PRIVATE,
+    )
+
+    if user_can_access_private_quiz(request.user, quiz):
+        messages.info(request, "You already have access to this quiz.")
+        return redirect("quizzes:public_detail", slug=quiz.slug)
+
+    if user_pending_join_request_for(request.user, quiz):
+        messages.info(request, "You already have a pending request for this quiz.")
+        return redirect("quizzes:my_join_requests")
+
+    if request.method == "POST":
+        form = JoinRequestForm(request.POST)
+        if form.is_valid():
+            jr = form.save(commit=False)
+            jr.quiz = quiz
+            jr.user = request.user
+            jr.save()
+            messages.success(
+                request,
+                "Request sent. You'll be notified when the creator responds.",
+            )
+            return redirect("quizzes:my_join_requests")
+    else:
+        form = JoinRequestForm()
+
+    return render(request, "quizzes/request_join.html", {"quiz": quiz, "form": form})

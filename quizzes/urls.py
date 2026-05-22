@@ -8,6 +8,7 @@ urlpatterns = [
     # Public browse + public detail
     path("q/", views.browse_quizzes, name="browse"),
     path("q/<slug:slug>/", views.public_quiz_detail, name="public_detail"),
+    path("q/<slug:slug>/request-access/", views.request_join, name="request_join"),
 
     # Creator dashboard
     path("my/quizzes/", views.my_quizzes, name="my_quizzes"),
@@ -30,4 +31,14 @@ urlpatterns = [
     path("choices/<int:choice_id>/update/", views.choice_update, name="choice_update"),
     path("choices/<int:choice_id>/toggle-correct/", views.choice_toggle_correct, name="choice_toggle_correct"),
     path("choices/<int:choice_id>/delete/", views.choice_delete, name="choice_delete"),
+
+    # Invitations & join requests: creator side
+    path("my/quizzes/<slug:slug>/invitations/", views.quiz_invitations, name="quiz_invitations"),
+    path("invitations/<int:invitation_id>/cancel/", views.invitation_cancel, name="invitation_cancel"),
+    path("join-requests/<int:join_request_id>/<str:action>/", views.join_request_review, name="join_request_review"),
+
+    # Invitations & join requests: user side
+    path("my/invitations/", views.my_invitations, name="my_invitations"),
+    path("invitations/<int:invitation_id>/respond/<str:action>/", views.invitation_respond, name="invitation_respond"),
+    path("my/join-requests/", views.my_join_requests, name="my_join_requests"),
 ]

@@ -71,21 +71,45 @@
         <div class="card-body">
           <h3 class="font-bold text-lg">Take this quiz</h3>
 
-          {% if not request.user.is_authenticated %}
-            <a href="{% url 'account_login' %}?next={{ request.path }}" class="btn btn-primary btn-block">
-              Log in to take this quiz
-            </a>
-          {% elif not quiz.is_accepting_responses %}
-            <p class="text-sm opacity-70">This quiz isn't currently accepting responses.</p>
-            <button type="button" class="btn btn-block" disabled>Take quiz</button>
+          {% if quiz.visibility == 'private' %}
+            {% if request.user == quiz.creator %}
+              <p class="text-sm opacity-70">
+                This is your private quiz.
+                <a href="{% url 'quizzes:quiz_invitations' slug=quiz.slug %}" class="link">Manage access &rarr;</a>
+              </p>
+            {% elif user_can_access %}
+              {% if not quiz.is_accepting_responses %}
+                <p class="text-sm opacity-70">This quiz isn't currently accepting responses.</p>
+                <button type="button" class="btn btn-block" disabled>Take quiz</button>
+              {% else %}
+                <button type="button" class="btn btn-primary btn-block btn-lg" disabled
+                        title="Quiz-taking lands in commit 15">Take quiz</button>
+                <p class="text-xs opacity-60 mt-1">Coming in the next update.</p>
+              {% endif %}
+            {% elif user_pending_request %}
+              <p class="text-sm">
+                Your access request is pending review.
+                <a href="{% url 'quizzes:my_join_requests' %}" class="link link-hover">See status &rarr;</a>
+              </p>
+            {% else %}
+              <a href="{% url 'quizzes:request_join' slug=quiz.slug %}" class="btn btn-secondary btn-block">
+                Request access
+              </a>
+              <p class="text-xs opacity-60 mt-1">Private quiz — the creator decides who can take it.</p>
+            {% endif %}
           {% else %}
-            <button
-              type="button"
-              class="btn btn-primary btn-block btn-lg"
-              disabled
-              title="Quiz-taking lands in commit 15"
-            >Take quiz</button>
-            <p class="text-xs opacity-60 mt-1">Coming in the next update.</p>
+            {% if not request.user.is_authenticated %}
+              <a href="{% url 'account_login' %}?next={{ request.path }}" class="btn btn-primary btn-block">
+                Log in to take this quiz
+              </a>
+            {% elif not quiz.is_accepting_responses %}
+              <p class="text-sm opacity-70">This quiz isn't currently accepting responses.</p>
+              <button type="button" class="btn btn-block" disabled>Take quiz</button>
+            {% else %}
+              <button type="button" class="btn btn-primary btn-block btn-lg" disabled
+                      title="Quiz-taking lands in commit 15">Take quiz</button>
+              <p class="text-xs opacity-60 mt-1">Coming in the next update.</p>
+            {% endif %}
           {% endif %}
 
           <div class="divider my-3"></div>
