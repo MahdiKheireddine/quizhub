@@ -19,6 +19,42 @@
     <p class="text-sm opacity-70">{{ quiz.title }}</p>
   </header>
 
+  {% if quiz.is_published %}
+    <div
+      x-data="{ copied: false }"
+      class="card bg-base-100 border border-base-300"
+    >
+      <div class="card-body p-4">
+        <h2 class="font-semibold text-sm opacity-70 uppercase tracking-wide">Shareable link</h2>
+        <div class="flex flex-col sm:flex-row gap-2 mt-2">
+          <input
+            x-ref="link"
+            type="text"
+            readonly
+            value="{{ request.scheme }}://{{ request.get_host }}{% url 'quizzes:public_detail' slug=quiz.slug %}"
+            @click="$event.target.select()"
+            class="input w-full font-mono text-sm"
+          />
+          <button
+            type="button"
+            class="btn btn-primary"
+            @click="navigator.clipboard.writeText($refs.link.value); copied = true; setTimeout(() => copied = false, 1500)"
+          >
+            <span x-show="!copied">Copy</span>
+            <span x-show="copied" x-cloak>Copied!</span>
+          </button>
+        </div>
+        <p class="text-xs opacity-60 mt-1">
+          Anyone with this link can request access. The recipient still needs an account to send the request.
+        </p>
+      </div>
+    </div>
+  {% else %}
+    <div role="alert" class="alert">
+      <span>Publish this quiz first to get a shareable link.</span>
+    </div>
+  {% endif %}
+
   {% if quiz.visibility != 'private' %}
     <div role="alert" class="alert alert-warning">
       <span>
