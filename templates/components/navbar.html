@@ -69,6 +69,7 @@
             </li>
             {% if user.can_create_quizzes %}
               <li><a href="{% url 'quizzes:my_quizzes' %}">📋 My quizzes</a></li>
+              <li><a href="{% url 'accounts:creator_profile' user.username %}">My public profile</a></li>
             {% endif %}
             <li><a href="/accounts/email/">Manage email</a></li>
             {% if not user.can_create_quizzes %}

@@ -34,7 +34,9 @@
       </div>
 
       <h1 class="text-3xl font-bold mt-2">{{ quiz.title }}</h1>
-      <p class="opacity-70">by {{ quiz.creator.username }}</p>
+      <p class="opacity-70">
+        by <a href="{% url 'accounts:creator_profile' quiz.creator.username %}" class="link link-hover font-medium">{{ quiz.creator.username }}</a>
+      </p>
 
       {% if quiz.description %}
         <div class="prose mt-4 max-w-none">

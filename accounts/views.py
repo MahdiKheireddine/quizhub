@@ -1,11 +1,12 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .forms import CreatorRequestForm
-from .models import CreatorRequest
+from .models import CreatorRequest, User
 
 
 @login_required
@@ -110,3 +111,40 @@ def reject_creator_request(request, pk):
     cr.reject(request.user, note=note)
     messages.success(request, f"Rejected {cr.user.username}'s creator request.")
     return redirect("accounts:creator_requests_admin")
+
+
+# ─── Public profile ─────────────────────────────────────────────────────
+
+def creator_profile(request, username):
+    """Public profile page for any user with creator privileges.
+
+    Shows their published quizzes — public ones to everyone, plus any private
+    ones the viewer has been invited to (the visibility helper handles this).
+
+    Returns 404 (not 403) for non-creators so we don't leak which usernames
+    have accounts on the platform.
+    """
+    profile_user = get_object_or_404(User, username=username)
+
+    has_creator_role = (
+        profile_user.is_creator_approved
+        or profile_user.role == User.Role.CREATOR
+    )
+    if not has_creator_role:
+        raise Http404
+
+    # Lazy import — keeps the accounts app from depending on the quizzes app at
+    # module import time, which simplifies app-level test isolation.
+    from quizzes.queries import visible_quizzes
+    quizzes = (
+        visible_quizzes(request.user)
+        .filter(creator=profile_user)
+        .order_by("-created_at")
+    )
+
+    return render(request, "accounts/creator_profile.html", {
+        "profile_user": profile_user,
+        "quizzes": quizzes,
+        "quiz_count": quizzes.count(),
+        "is_own_profile": request.user.is_authenticated and request.user == profile_user,
+    })

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}{{ profile_user.username }} · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+
+  {# ───── Profile header ───── #}
+  <div class="card bg-base-100 shadow-sm border border-base-300">
+    <div class="card-body">
+      <div class="flex flex-col sm:flex-row gap-6 items-start">
+
+        {# Avatar (v5: `avatar avatar-placeholder`, not v3's two-class `avatar placeholder`) #}
+        <div class="avatar avatar-placeholder">
+          <div class="bg-primary text-primary-content w-24 h-24 rounded-full">
+            <span class="text-3xl font-bold">{{ profile_user.username|slice:":2"|upper }}</span>
+          </div>
+        </div>
+
+        {# Identity #}
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-2xl font-bold">{{ profile_user.username }}</h1>
+            <span class="badge badge-primary">Creator</span>
+            {% if profile_user.role == 'admin' %}
+              <span class="badge badge-error">Admin</span>
+            {% endif %}
+          </div>
+          {% if profile_user.bio %}
+            <p class="mt-2 text-base-content/80 whitespace-pre-wrap">{{ profile_user.bio }}</p>
+          {% elif is_own_profile %}
+            <p class="mt-2 opacity-60 italic">
+              No bio yet &mdash; <a href="#" class="link link-hover">add one</a> to introduce yourself.
+            </p>
+          {% endif %}
+        </div>
+
+        {# Own-profile actions #}
+        {% if is_own_profile %}
+          <div class="flex gap-2 items-center flex-wrap">
+            <a href="{% url 'quizzes:my_quizzes' %}" class="btn btn-ghost btn-sm">My quizzes</a>
+            <span class="badge badge-ghost gap-1" title="Only you see this badge">
+              👁️ Public view
+            </span>
+          </div>
+        {% endif %}
+      </div>
+
+      {# Stats #}
+      <div class="stats stats-vertical sm:stats-horizontal shadow bg-base-200 mt-6 w-full">
+        <div class="stat">
+          <div class="stat-title">Published quizzes</div>
+          <div class="stat-value text-primary">{{ quiz_count }}</div>
+          <div class="stat-desc">visible to you</div>
+        </div>
+        <div class="stat">
+          <div class="stat-title">Joined</div>
+          <div class="stat-value text-base">{{ profile_user.date_joined|date:"M Y" }}</div>
+          <div class="stat-desc">{{ profile_user.date_joined|timesince }} ago</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# ───── Quizzes ───── #}
+  <div class="mt-8">
+    <h2 class="text-xl font-bold mb-4">Quizzes</h2>
+
+    {% if quizzes %}
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for quiz in quizzes %}
+          {% include "quizzes/partials/quiz_card.html" with quiz=quiz %}
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card bg-base-100 border border-base-300">
+        <div class="card-body items-center text-center py-12">
+          <p class="opacity-70">
+            {% if is_own_profile %}
+              You haven't published any quizzes yet.
+              <a href="{% url 'quizzes:quiz_create' %}" class="link link-primary">Create your first quiz &rarr;</a>
+            {% else %}
+              {{ profile_user.username }} hasn't published any quizzes you can see.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

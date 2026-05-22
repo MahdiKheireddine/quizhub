@@ -2047,6 +2047,19 @@
     }
   }
   @layer daisyui.l1.l2.l3 {
+    .stat-desc {
+      grid-column-start: 1;
+      white-space: nowrap;
+      color: var(--color-base-content);
+      font-size: 0.75rem;
+    }
+    @supports (color: color-mix(in lab, red, red)) {
+      .stat-desc {
+        color: color-mix(in oklab, var(--color-base-content) 60%, transparent);
+      }
+    }
+  }
+  @layer daisyui.l1.l2.l3 {
     .stat-title {
       grid-column-start: 1;
       white-space: nowrap;
@@ -2278,6 +2291,9 @@
   }
   .mt-6 {
     margin-top: calc(var(--spacing) * 6);
+  }
+  .mt-8 {
+    margin-top: calc(var(--spacing) * 8);
   }
   .mt-10 {
     margin-top: calc(var(--spacing) * 10);
@@ -2712,6 +2728,9 @@
   .h-5 {
     height: calc(var(--spacing) * 5);
   }
+  .h-24 {
+    height: calc(var(--spacing) * 24);
+  }
   .max-h-96 {
     max-height: calc(var(--spacing) * 96);
   }
@@ -2740,6 +2759,9 @@
   }
   .w-20 {
     width: calc(var(--spacing) * 20);
+  }
+  .w-24 {
+    width: calc(var(--spacing) * 24);
   }
   .w-52 {
     width: calc(var(--spacing) * 52);
@@ -3554,6 +3576,18 @@
       color: var(--color-primary);
     }
   }
+  .before\:absolute::before {
+    content: var(--tw-content);
+    position: absolute;
+  }
+  .before\:inset-0::before {
+    content: var(--tw-content);
+    inset: calc(var(--spacing) * 0);
+  }
+  .before\:content-\[\'\'\]::before {
+    --tw-content: '';
+    content: var(--tw-content);
+  }
   @media (hover: hover) {
     .hover\:-translate-y-0\.5:hover {
       --tw-translate-y: calc(var(--spacing) * -0.5);
@@ -4337,6 +4371,11 @@
   syntax: "*";
   inherits: false;
 }
+@property --tw-content {
+  syntax: "*";
+  initial-value: "";
+  inherits: false;
+}
 @property --tw-translate-x {
   syntax: "*";
   inherits: false;
@@ -4406,6 +4445,7 @@
       --tw-backdrop-saturate: initial;
       --tw-backdrop-sepia: initial;
       --tw-duration: initial;
+      --tw-content: "";
       --tw-translate-x: 0;
       --tw-translate-y: 0;
       --tw-translate-z: 0;

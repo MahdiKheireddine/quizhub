@@ -10,4 +10,8 @@ urlpatterns = [
     path("creator-requests/", views.creator_requests_admin_view, name="creator_requests_admin"),
     path("creator-requests/<int:pk>/approve/", views.approve_creator_request, name="approve_creator_request"),
     path("creator-requests/<int:pk>/reject/", views.reject_creator_request, name="reject_creator_request"),
+
+    # MUST stay last: this greedy `<str:username>/` pattern would otherwise
+    # swallow `request-creator/`, `creator-status/`, etc.
+    path("<str:username>/", views.creator_profile, name="creator_profile"),
 ]
