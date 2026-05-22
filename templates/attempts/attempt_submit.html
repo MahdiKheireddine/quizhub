@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Submit · {{ quiz.title }} · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <div class="card bg-base-100 shadow-xl border border-base-300">
+    <div class="card-body">
+      <h1 class="text-2xl font-bold">Ready to submit?</h1>
+      <p class="text-sm opacity-70">{{ quiz.title }}</p>
+
+      <div class="divider my-2"></div>
+
+      <div class="text-sm space-y-1">
+        <p><strong>{{ answered_count }}</strong> of <strong>{{ total }}</strong> questions answered.</p>
+        {% if unanswered_count %}
+          <div role="alert" class="alert alert-warning mt-3">
+            <span>
+              You have <strong>{{ unanswered_count }}</strong> unanswered
+              question{{ unanswered_count|pluralize }}. They'll be scored as 0.
+            </span>
+          </div>
+        {% else %}
+          <div role="alert" class="alert alert-success mt-3">
+            <span>All questions answered.</span>
+          </div>
+        {% endif %}
+      </div>
+
+      <form method="post" action="{% url 'attempts:submit' attempt_id=attempt.id %}" class="mt-4 space-y-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary btn-block">Submit final</button>
+        <a href="{% url 'attempts:run' attempt_id=attempt.id %}" class="btn btn-ghost btn-block">Keep editing</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Q{{ idx|add:1 }} of {{ total }} · {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div
+  class="max-w-5xl mx-auto"
+  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+>
+
+  <div class="grid lg:grid-cols-3 gap-6">
+
+    {# ───── Sidebar: progress + jump dots ───── #}
+    <aside class="lg:sticky lg:top-20 self-start">
+      <div class="card bg-base-100 border border-base-300">
+        <div class="card-body p-4">
+          <p class="text-sm opacity-70">Quiz</p>
+          <p class="font-semibold break-words">{{ quiz.title }}</p>
+
+          <div class="divider my-2"></div>
+
+          <p class="text-sm">
+            Question <strong>{{ idx|add:1 }}</strong> of <strong>{{ total }}</strong>
+          </p>
+          <progress
+            class="progress progress-primary w-full"
+            value="{{ answered_count }}"
+            max="{{ total }}"
+          ></progress>
+          <p class="text-xs opacity-60">{{ answered_count }} of {{ total }} answered</p>
+
+          <div class="grid grid-cols-5 sm:grid-cols-6 lg:grid-cols-5 gap-1 mt-3">
+            {% for p in progress %}
+              <a
+                href="?q={{ p.idx }}"
+                title="Question {{ p.idx|add:1 }}{% if p.answered %} (answered){% endif %}"
+                class="aspect-square flex items-center justify-center rounded text-xs font-mono
+                  {% if p.current %}bg-primary text-primary-content
+                  {% elif p.answered %}bg-success text-success-content
+                  {% else %}bg-base-300 text-base-content hover:bg-base-content/20{% endif %}"
+              >{{ p.idx|add:1 }}</a>
+            {% endfor %}
+          </div>
+
+          <div class="divider my-2"></div>
+
+          <a
+            href="{% url 'attempts:submit_confirm' attempt_id=attempt.id %}"
+            class="btn btn-success btn-sm w-full"
+          >Review &amp; submit</a>
+        </div>
+      </div>
+    </aside>
+
+    {# ───── Main: the current question ───── #}
+    <main class="lg:col-span-2">
+      <div class="card bg-base-100 shadow-sm border border-base-300">
+        <div class="card-body">
+
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <p class="text-xs opacity-60 font-mono uppercase tracking-wide">
+              Question {{ idx|add:1 }} of {{ total }}
+            </p>
+            <span class="badge badge-outline">{{ question.points }} pt{{ question.points|pluralize }}</span>
+          </div>
+
+          <h2 class="text-xl font-semibold mt-1 whitespace-pre-wrap">{{ question.text }}</h2>
+
+          {% if question.type == 'multiple' %}
+            <p class="text-xs opacity-70 italic mt-1">Select all that apply.</p>
+          {% endif %}
+
+          <form
+            id="answer-form-{{ question.id }}"
+            hx-post="{% url 'attempts:answer_save' attempt_id=attempt.id question_id=question.id %}"
+            hx-trigger="change"
+            hx-target="#save-indicator"
+            hx-swap="innerHTML"
+            class="space-y-2 mt-4"
+          >
+            {% for choice in question.choices.all %}
+              <label class="flex items-center gap-3 p-3 rounded-lg border border-base-300 hover:bg-base-200 cursor-pointer transition">
+                {% if question.type == 'multiple' %}
+                  <input
+                    type="checkbox"
+                    name="choice"
+                    value="{{ choice.id }}"
+                    class="checkbox checkbox-primary"
+                    {% if choice.id in selected_ids %}checked{% endif %}
+                  />
+                {% else %}
+                  <input
+                    type="radio"
+                    name="choice"
+                    value="{{ choice.id }}"
+                    class="radio radio-primary"
+                    {% if choice.id in selected_ids %}checked{% endif %}
+                  />
+                {% endif %}
+                <span>{{ choice.text }}</span>
+              </label>
+            {% endfor %}
+          </form>
+
+          <div id="save-indicator" class="text-xs mt-2 h-4"></div>
+
+          {# Nav buttons #}
+          <div class="flex items-center gap-2 mt-4">
+            {% if not is_first %}
+              <a href="?q={{ idx|add:'-1' }}" class="btn btn-ghost btn-sm">&larr; Previous</a>
+            {% else %}
+              <span class="btn btn-ghost btn-sm btn-disabled opacity-40">&larr; Previous</span>
+            {% endif %}
+
+            <div class="flex-1"></div>
+
+            {% if is_last %}
+              <a href="{% url 'attempts:submit_confirm' attempt_id=attempt.id %}" class="btn btn-success btn-sm">
+                Review &amp; submit &rarr;
+              </a>
+            {% else %}
+              <a href="?q={{ idx|add:1 }}" class="btn btn-primary btn-sm">Next &rarr;</a>
+            {% endif %}
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+  </div>
+</div>
+{% endblock %}

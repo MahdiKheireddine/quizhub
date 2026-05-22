@@ -82,9 +82,9 @@
                 <p class="text-sm opacity-70">This quiz isn't currently accepting responses.</p>
                 <button type="button" class="btn btn-block" disabled>Take quiz</button>
               {% else %}
-                <button type="button" class="btn btn-primary btn-block btn-lg" disabled
-                        title="Quiz-taking lands in commit 15">Take quiz</button>
-                <p class="text-xs opacity-60 mt-1">Coming in the next update.</p>
+                <a href="{% url 'attempts:start' slug=quiz.slug %}" class="btn btn-primary btn-block btn-lg">
+                  Take quiz
+                </a>
               {% endif %}
             {% elif user_pending_request %}
               <p class="text-sm">
@@ -106,9 +106,9 @@
               <p class="text-sm opacity-70">This quiz isn't currently accepting responses.</p>
               <button type="button" class="btn btn-block" disabled>Take quiz</button>
             {% else %}
-              <button type="button" class="btn btn-primary btn-block btn-lg" disabled
-                      title="Quiz-taking lands in commit 15">Take quiz</button>
-              <p class="text-xs opacity-60 mt-1">Coming in the next update.</p>
+              <a href="{% url 'attempts:start' slug=quiz.slug %}" class="btn btn-primary btn-block btn-lg">
+                Take quiz
+              </a>
             {% endif %}
           {% endif %}
 

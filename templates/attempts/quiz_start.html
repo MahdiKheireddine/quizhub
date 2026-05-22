@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Take {{ quiz.title }} · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-4">
+
+  {# Breadcrumb #}
+  <p class="text-sm">
+    <a href="{% url 'quizzes:browse' %}" class="link link-hover">Browse</a>
+    <span class="mx-2 opacity-60">/</span>
+    <a href="{% url 'quizzes:public_detail' slug=quiz.slug %}" class="link link-hover">{{ quiz.title }}</a>
+  </p>
+
+  <div class="card bg-base-100 shadow-xl border border-base-300">
+    <div class="card-body">
+      <h1 class="text-2xl font-bold">Ready to take {{ quiz.title }}?</h1>
+      <p class="text-sm opacity-70">
+        by <a href="{% url 'accounts:creator_profile' quiz.creator.username %}" class="link link-hover">{{ quiz.creator.username }}</a>
+      </p>
+
+      <div class="divider text-xs opacity-70 uppercase tracking-wide my-2">Before you start</div>
+
+      <ul class="space-y-2 text-sm">
+        <li class="flex items-start gap-2">
+          <span class="text-primary mt-0.5 font-bold">✓</span>
+          <span><strong>{{ quiz.question_count }}</strong> questions worth <strong>{{ quiz.total_points }}</strong> total points.</span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-primary mt-0.5 font-bold">✓</span>
+          <span>Questions will be shown in a random order.</span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-primary mt-0.5 font-bold">✓</span>
+          <span>Your answers save automatically as you select them.</span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-primary mt-0.5 font-bold">✓</span>
+          <span>
+            {% if quiz.allow_retakes %}
+              You can retake this quiz later.
+            {% else %}
+              You can only take this quiz once.
+            {% endif %}
+          </span>
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="text-primary mt-0.5 font-bold">✓</span>
+          <span>
+            {% if quiz.show_results_immediately %}
+              You'll see your score and correct answers right after submitting.
+            {% else %}
+              Your score will be released by the creator.
+            {% endif %}
+          </span>
+        </li>
+        {% if quiz.pass_score %}
+          <li class="flex items-start gap-2">
+            <span class="text-primary mt-0.5 font-bold">✓</span>
+            <span>Pass score: <strong>{{ quiz.pass_score }}%</strong>.</span>
+          </li>
+        {% endif %}
+      </ul>
+
+      <form method="post" action="{% url 'attempts:start' slug=quiz.slug %}" class="mt-6 space-y-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary btn-lg btn-block">Start quiz</button>
+        <a href="{% url 'quizzes:public_detail' slug=quiz.slug %}" class="btn btn-ghost btn-block">Cancel</a>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
