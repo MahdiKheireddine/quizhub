@@ -1,0 +1,51 @@
+{% comment %}
+Reusable pagination control.
+
+Expected context:
+  - page_obj: Django Page instance
+  - querystring_no_page: string with all query params except `page`, ending in
+    '&' if non-empty.
+  - page_range: pre-computed list from paginator.get_elided_page_range(),
+    containing page numbers and ELLIPSIS placeholders. Computed in Python
+    because Django's {% for %} can't call methods with arguments inline.
+
+Use the paginate() helper from core.pagination — it returns all three.
+Renders nothing if there's only one page.
+{% endcomment %}
+
+{% if page_obj.paginator.num_pages > 1 %}
+  <nav class="flex items-center justify-center gap-2 mt-8 flex-wrap" aria-label="Pagination">
+
+    {% if page_obj.has_previous %}
+      <a href="?{{ querystring_no_page }}page={{ page_obj.previous_page_number }}"
+         class="btn btn-ghost btn-sm">&larr; Previous</a>
+    {% else %}
+      <span class="btn btn-ghost btn-sm btn-disabled">&larr; Previous</span>
+    {% endif %}
+
+    <div class="join">
+      {% for num in page_range %}
+        {% if num == page_obj.paginator.ELLIPSIS %}
+          <span class="join-item btn btn-sm btn-disabled">…</span>
+        {% elif num == page_obj.number %}
+          <span class="join-item btn btn-sm btn-active">{{ num }}</span>
+        {% else %}
+          <a class="join-item btn btn-sm"
+             href="?{{ querystring_no_page }}page={{ num }}">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {% if page_obj.has_next %}
+      <a href="?{{ querystring_no_page }}page={{ page_obj.next_page_number }}"
+         class="btn btn-ghost btn-sm">Next &rarr;</a>
+    {% else %}
+      <span class="btn btn-ghost btn-sm btn-disabled">Next &rarr;</span>
+    {% endif %}
+  </nav>
+
+  <p class="text-center text-xs opacity-60 mt-2">
+    Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    &middot; {{ page_obj.paginator.count }} result{{ page_obj.paginator.count|pluralize }}
+  </p>
+{% endif %}

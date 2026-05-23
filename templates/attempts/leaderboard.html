@@ -11,7 +11,7 @@
       <p class="text-sm opacity-60 uppercase tracking-wide">Leaderboard</p>
       <h1 class="text-2xl font-bold">{{ quiz.title }}</h1>
       <p class="text-sm opacity-70 mt-1">
-        Top {{ top_n }} of {{ total_participants }} participant{{ total_participants|pluralize }}
+        {{ total_participants }} participant{{ total_participants|pluralize }} on the leaderboard
       </p>
     </div>
     <a href="{% url 'quizzes:public_detail' slug=quiz.slug %}" class="btn btn-ghost btn-sm">&larr; Back to quiz</a>
@@ -77,6 +77,8 @@
         </table>
       </div>
     </div>
+
+    {% include "components/pagination.html" %}
   {% else %}
     <div class="card bg-base-100 border border-base-300">
       <div class="card-body items-center text-center py-12">

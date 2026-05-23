@@ -9,6 +9,8 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_http_methods
 
+from core.pagination import paginate
+
 from .forms import ChoiceForm, InviteUserForm, JoinRequestForm, QuestionForm, QuizForm
 from .models import Category, Choice, Invitation, JoinRequest, Question, Quiz, Tag
 from .queries import (
@@ -318,9 +320,11 @@ def browse_quizzes(request):
     else:
         qs = qs.order_by("-created_at")
 
-    # .distinct() must come BEFORE the slice (a sliced QuerySet can't be re-filtered).
-    # Without it, filtering by tags__slug would multi-count quizzes with many tags.
-    quizzes = qs.distinct()[:60]
+    # .distinct() must come BEFORE pagination — filtering by tags__slug does a
+    # JOIN, which would multi-count quizzes with many tags and inflate the
+    # paginator's count and page sizes.
+    qs = qs.distinct()
+    page_obj, querystring_no_page, page_range = paginate(qs, request, per_page=24)
 
     # Category strip with quiz counts for the filter UI.
     categories = Category.objects.annotate(num=Count("quizzes")).order_by("order")
@@ -332,7 +336,10 @@ def browse_quizzes(request):
     active_tag = Tag.objects.filter(slug=tag_slug).first() if tag_slug else None
 
     return render(request, "quizzes/browse.html", {
-        "quizzes": quizzes,
+        "quizzes": page_obj.object_list,
+        "page_obj": page_obj,
+        "querystring_no_page": querystring_no_page,
+        "page_range": page_range,
         "q": q,
         "sort": sort,
         "categories": categories,

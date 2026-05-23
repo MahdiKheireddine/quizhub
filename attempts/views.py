@@ -337,14 +337,19 @@ def quiz_leaderboard(request, slug):
             ),
         })
 
-    # Top N for display; if the current user is outside the top N but ranked,
+    # Paginate the ranked list. Paginator accepts a Python list and slices it
+    # in memory — fine for our scale (thousands at most per quiz). If a quiz
+    # ever has 100k+ attempts, switch to a DB-side window function.
+    from core.pagination import paginate
+    page_obj, querystring_no_page, page_range = paginate(rows, request, per_page=20)
+    top_rows = list(page_obj.object_list)
+
+    # If the current user isn't on this page but exists in the rankings,
     # surface their row separately so they always see where they stand.
-    top_n = 20
-    top_rows = rows[:top_n]
     current_user_row = None
     if request.user.is_authenticated:
-        in_top = any(r["is_current_user"] for r in top_rows)
-        if not in_top:
+        in_page = any(r["is_current_user"] for r in top_rows)
+        if not in_page:
             current_user_row = next((r for r in rows if r["is_current_user"]), None)
 
     return render(request, "attempts/leaderboard.html", {
@@ -352,5 +357,7 @@ def quiz_leaderboard(request, slug):
         "rows": top_rows,
         "current_user_row": current_user_row,
         "total_participants": len(rows),
-        "top_n": top_n,
+        "page_obj": page_obj,
+        "querystring_no_page": querystring_no_page,
+        "page_range": page_range,
     })
