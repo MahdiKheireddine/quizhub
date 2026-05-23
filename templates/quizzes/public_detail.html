@@ -38,6 +38,21 @@
         by <a href="{% url 'accounts:creator_profile' quiz.creator.username %}" class="link link-hover font-medium">{{ quiz.creator.username }}</a>
       </p>
 
+      {% if quiz.category or quiz.tags.all %}
+        <div class="flex flex-wrap gap-2 mt-3">
+          {% if quiz.category %}
+            <a href="{% url 'quizzes:browse' %}?category={{ quiz.category.slug }}"
+               class="badge badge-primary badge-lg gap-1 hover:opacity-80">
+              {% if quiz.category.icon %}{{ quiz.category.icon }}{% endif %} {{ quiz.category.name }}
+            </a>
+          {% endif %}
+          {% for tag in quiz.tags.all %}
+            <a href="{% url 'quizzes:browse' %}?tag={{ tag.slug }}"
+               class="badge badge-outline badge-lg hover:bg-base-200">#{{ tag.name }}</a>
+          {% endfor %}
+        </div>
+      {% endif %}
+
       {% if quiz.description %}
         <div class="prose mt-4 max-w-none">
           <p class="whitespace-pre-wrap">{{ quiz.description }}</p>

@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
-from .models import Choice, Invitation, JoinRequest, Question, Quiz
+from .models import Choice, Invitation, JoinRequest, Question, Quiz, Tag
 
 User = get_user_model()
 
@@ -21,7 +21,9 @@ class QuizForm(forms.ModelForm):
     class Meta:
         model = Quiz
         fields = [
-            "title", "description", "visibility",
+            "title", "description", "category",
+            # tags handled separately via the tags_raw CharField below
+            "visibility",
             "is_active", "closes_at", "time_limit_minutes",
             "allow_retakes", "show_results_immediately", "pass_score",
         ]
@@ -33,6 +35,7 @@ class QuizForm(forms.ModelForm):
                 "class": TEXTAREA, "rows": 4,
                 "placeholder": "Optional. What's this quiz about?",
             }),
+            "category": forms.Select(attrs={"class": SELECT}),
             "visibility": forms.Select(attrs={"class": SELECT}),
             "closes_at": forms.DateTimeInput(
                 attrs={"class": INPUT, "type": "datetime-local"},
@@ -49,6 +52,7 @@ class QuizForm(forms.ModelForm):
             }),
         }
         labels = {
+            "category": "Category",
             "is_active": "Currently accepting responses",
             "closes_at": "Auto-close date (optional)",
             "allow_retakes": "Allow users to retake this quiz",
@@ -90,6 +94,58 @@ class QuizForm(forms.ModelForm):
                 "Time limit must be between 1 and 480 minutes (8 hours)."
             )
         return val
+
+    # ── Tags (free-form, comma-separated) ────────────────────────────────
+    # NOT a ModelForm field — we accept a comma-separated string and resolve
+    # to Tag objects ourselves so we can normalize and create-on-the-fly.
+    tags_raw = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            "class": INPUT,
+            "placeholder": "e.g. django, web, beginner (comma-separated)",
+            "autocomplete": "off",
+        }),
+        label="Tags",
+        help_text="Up to 8 tags. Lowercase. Letters, numbers, hyphens only.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Prefill tags_raw from the existing instance, if editing.
+        if self.instance and self.instance.pk:
+            existing = self.instance.tags.values_list("name", flat=True)
+            self.fields["tags_raw"].initial = ", ".join(existing)
+
+    def clean_tags_raw(self):
+        raw = self.cleaned_data.get("tags_raw", "").strip()
+        if not raw:
+            return []
+        parts = [p for p in (s.strip() for s in raw.split(",")) if p]
+        if len(parts) > 8:
+            raise forms.ValidationError("Up to 8 tags per quiz.")
+        tags = []
+        seen_slugs = set()
+        for raw_tag in parts:
+            tag = Tag.from_string(raw_tag)
+            if tag is None:
+                raise forms.ValidationError(f"'{raw_tag}' is not a valid tag.")
+            if tag.slug in seen_slugs:
+                continue  # dedupe within this form (e.g. "Django, django" → 1)
+            seen_slugs.add(tag.slug)
+            tags.append(tag)
+        return tags
+
+    def save(self, commit=True):
+        """Save the Quiz then attach tags.
+
+        For NEW quizzes the caller is responsible for assigning .creator on the
+        commit=False instance and then calling .save() before any M2M attaches.
+        See `quiz_create` in views.py.
+        """
+        quiz = super().save(commit=commit)
+        if commit:
+            quiz.tags.set(self.cleaned_data.get("tags_raw", []))
+        return quiz
 
 
 class QuestionForm(forms.ModelForm):

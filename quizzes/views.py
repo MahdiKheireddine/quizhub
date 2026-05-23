@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST, require_http_methods
 
 from .forms import ChoiceForm, InviteUserForm, JoinRequestForm, QuestionForm, QuizForm
-from .models import Choice, Invitation, JoinRequest, Question, Quiz
+from .models import Category, Choice, Invitation, JoinRequest, Question, Quiz, Tag
 from .queries import (
     public_browse_queryset,
     user_can_access_private_quiz,
@@ -50,6 +50,8 @@ def quiz_create(request):
             quiz.creator = request.user
             quiz.is_published = False  # always start as draft
             quiz.save()
+            # Quiz now has a pk; attach tags collected by the form.
+            quiz.tags.set(form.cleaned_data.get("tags_raw", []))
             messages.success(
                 request,
                 f"Quiz '{quiz.title}' created as a draft. Add questions next.",
@@ -290,11 +292,23 @@ def choice_delete(request, choice_id):
 
 def browse_quizzes(request):
     """Public list of all published public quizzes. No auth required."""
-    qs = public_browse_queryset()
+    qs = (
+        public_browse_queryset()
+        .select_related("category")
+        .prefetch_related("tags")
+    )
 
     q = request.GET.get("q", "").strip()
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+
+    category_slug = request.GET.get("category", "").strip()
+    if category_slug:
+        qs = qs.filter(category__slug=category_slug)
+
+    tag_slug = request.GET.get("tag", "").strip()
+    if tag_slug:
+        qs = qs.filter(tags__slug=tag_slug)
 
     sort = request.GET.get("sort", "recent")
     if sort == "popular":
@@ -304,10 +318,26 @@ def browse_quizzes(request):
     else:
         qs = qs.order_by("-created_at")
 
+    # .distinct() must come BEFORE the slice (a sliced QuerySet can't be re-filtered).
+    # Without it, filtering by tags__slug would multi-count quizzes with many tags.
+    quizzes = qs.distinct()[:60]
+
+    # Category strip with quiz counts for the filter UI.
+    categories = Category.objects.annotate(num=Count("quizzes")).order_by("order")
+
+    # Active filter objects (for breadcrumb-style chips in the template).
+    active_category = (
+        Category.objects.filter(slug=category_slug).first() if category_slug else None
+    )
+    active_tag = Tag.objects.filter(slug=tag_slug).first() if tag_slug else None
+
     return render(request, "quizzes/browse.html", {
-        "quizzes": qs[:60],  # cap to 60; pagination is a later concern
+        "quizzes": quizzes,
         "q": q,
         "sort": sort,
+        "categories": categories,
+        "active_category": active_category,
+        "active_tag": active_tag,
     })
 
 

@@ -42,6 +42,23 @@
           {% for e in form.description.errors %}<p class="fieldset-label text-error">{{ e }}</p>{% endfor %}
         </fieldset>
 
+        {# ────────── Tags & category ────────── #}
+        <div class="divider divider-start text-xs opacity-70 uppercase tracking-wide">Tags &amp; category</div>
+
+        <fieldset class="fieldset w-full">
+          <legend class="fieldset-legend">{{ form.category.label }}</legend>
+          {{ form.category }}
+          {% if form.category.help_text %}<p class="fieldset-label opacity-70">{{ form.category.help_text }}</p>{% endif %}
+          {% for e in form.category.errors %}<p class="fieldset-label text-error">{{ e }}</p>{% endfor %}
+        </fieldset>
+
+        <fieldset class="fieldset w-full">
+          <legend class="fieldset-legend">{{ form.tags_raw.label }}</legend>
+          {{ form.tags_raw }}
+          {% if form.tags_raw.help_text %}<p class="fieldset-label opacity-70">{{ form.tags_raw.help_text }}</p>{% endif %}
+          {% for e in form.tags_raw.errors %}<p class="fieldset-label text-error">{{ e }}</p>{% endfor %}
+        </fieldset>
+
         {# ────────── Access ────────── #}
         <div class="divider divider-start text-xs opacity-70 uppercase tracking-wide">Access</div>
 

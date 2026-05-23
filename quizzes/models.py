@@ -1,8 +1,74 @@
+import re
+
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
+
+
+class Category(models.Model):
+    """A high-level topic (Programming, Science, History, ...). Admin-managed.
+
+    Each Quiz can belong to AT MOST one category (FK, optional). Categories
+    give the platform structure for browsing — they're a curated taxonomy,
+    distinct from user-generated tags.
+    """
+
+    name = models.CharField(max_length=60, unique=True)
+    slug = models.SlugField(max_length=80, unique=True)
+    icon = models.CharField(
+        max_length=8, blank=True,
+        help_text="Emoji or short text shown next to the category name.",
+    )
+    description = models.CharField(max_length=200, blank=True)
+    order = models.PositiveIntegerField(default=0, help_text="Sort order in dropdowns.")
+
+    class Meta:
+        ordering = ["order", "name"]
+        verbose_name_plural = "Categories"
+
+    def __str__(self):
+        return self.name
+
+
+class Tag(models.Model):
+    """A user-defined label on a quiz. Lowercase-normalized to avoid 'Django' /
+    'django' duplicates. Created on the fly when a creator types one that
+    doesn't yet exist.
+    """
+
+    name = models.CharField(max_length=40, unique=True)
+    slug = models.SlugField(max_length=50, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+    @classmethod
+    def from_string(cls, raw):
+        """Normalize a user-typed tag and get-or-create.
+
+        Strips whitespace, lowercases, replaces internal spaces with hyphens,
+        removes characters that aren't alphanumeric or hyphens. Returns None
+        for empty input.
+        """
+        cleaned = raw.strip().lower()
+        cleaned = re.sub(r"\s+", "-", cleaned)
+        cleaned = re.sub(r"[^a-z0-9\-]", "", cleaned)
+        cleaned = re.sub(r"-+", "-", cleaned).strip("-")
+        if not cleaned:
+            return None
+        if len(cleaned) > 40:
+            cleaned = cleaned[:40]
+        tag, _ = cls.objects.get_or_create(
+            slug=cleaned,
+            defaults={"name": cleaned},
+        )
+        return tag
 
 
 class Quiz(models.Model):
@@ -37,6 +103,17 @@ class Quiz(models.Model):
     title = models.CharField(max_length=200)
     slug = models.SlugField(max_length=220, unique=True, blank=True)
     description = models.TextField(blank=True)
+    category = models.ForeignKey(
+        "Category",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="quizzes",
+    )
+    tags = models.ManyToManyField(
+        "Tag",
+        blank=True,
+        related_name="quizzes",
+    )
     visibility = models.CharField(
         max_length=10, choices=Visibility.choices, default=Visibility.PUBLIC
     )

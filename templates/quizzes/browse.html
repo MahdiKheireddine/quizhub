@@ -3,7 +3,7 @@
 {% block title %}Browse quizzes · {{ SITE_NAME }}{% endblock %}
 
 {% block content %}
-<div class="max-w-6xl mx-auto space-y-6">
+<div class="max-w-6xl mx-auto space-y-4">
 
   {# ───── Header ───── #}
   <header>
@@ -11,10 +11,39 @@
     <p class="text-sm opacity-70">Find a quiz to take or learn from.</p>
   </header>
 
+  {# ───── Category strip ───── #}
+  <div class="flex flex-wrap gap-2 items-center">
+    <a href="{% url 'quizzes:browse' %}{% if q %}?q={{ q }}{% endif %}"
+       class="badge badge-lg {% if not active_category %}badge-primary{% else %}badge-ghost{% endif %} hover:opacity-80 cursor-pointer">
+      All
+    </a>
+    {% for cat in categories %}
+      <a href="{% url 'quizzes:browse' %}?category={{ cat.slug }}{% if q %}&q={{ q }}{% endif %}"
+         class="badge badge-lg {% if active_category.slug == cat.slug %}badge-primary{% else %}badge-ghost{% endif %} gap-1 hover:opacity-80 cursor-pointer">
+        {% if cat.icon %}{{ cat.icon }}{% endif %} {{ cat.name }}
+        <span class="opacity-60 text-xs">({{ cat.num }})</span>
+      </a>
+    {% endfor %}
+  </div>
+
+  {# ───── Active tag chip (only shown when filtering by tag) ───── #}
+  {% if active_tag %}
+    <div class="flex items-center gap-2">
+      <span class="text-sm opacity-70">Filtered by tag:</span>
+      <span class="badge badge-lg badge-secondary gap-1">
+        #{{ active_tag.name }}
+        <a href="{% url 'quizzes:browse' %}{% if q %}?q={{ q }}{% endif %}{% if active_category %}{% if q %}&{% else %}?{% endif %}category={{ active_category.slug }}{% endif %}"
+           class="opacity-80 hover:opacity-100">✕</a>
+      </span>
+    </div>
+  {% endif %}
+
   {# ───── Filter bar ───── #}
   <div class="card bg-base-100 border border-base-300">
     <div class="card-body p-4">
       <form method="get" class="flex flex-col sm:flex-row gap-2 items-stretch">
+        {% if active_category %}<input type="hidden" name="category" value="{{ active_category.slug }}">{% endif %}
+        {% if active_tag %}<input type="hidden" name="tag" value="{{ active_tag.slug }}">{% endif %}
         <input
           type="search"
           name="q"
@@ -39,25 +68,23 @@
 
   {# ───── Results ───── #}
   {% if not quizzes %}
-    {% if q %}
-      <div class="card bg-base-100 border border-base-300">
-        <div class="card-body items-center text-center py-12">
-          <p class="text-lg">No quizzes match &ldquo;{{ q }}&rdquo;.</p>
-          <p class="text-sm opacity-70">Try different terms.</p>
-        </div>
-      </div>
-    {% else %}
-      <div class="card bg-base-100 border border-base-300">
-        <div class="card-body items-center text-center py-12">
-          <div class="text-5xl">📭</div>
-          <p class="text-lg">No public quizzes yet.</p>
-          <p class="text-sm opacity-70">Be the first.</p>
-          {% if not user.is_authenticated %}
-            <a href="{% url 'account_signup' %}" class="btn btn-primary mt-2">Sign up and create one</a>
+    <div class="card bg-base-100 border border-base-300">
+      <div class="card-body items-center text-center py-12">
+        <p class="opacity-70">
+          {% if active_category or active_tag or q %}
+            No quizzes match your filters.
+            <a href="{% url 'quizzes:browse' %}" class="link link-primary">Clear all filters</a>.
+          {% else %}
+            No public quizzes yet.
+            {% if not user.is_authenticated %}
+              <a href="{% url 'account_signup' %}" class="link link-primary">Sign up</a> and create one!
+            {% else %}
+              Be the first.
+            {% endif %}
           {% endif %}
-        </div>
+        </p>
       </div>
-    {% endif %}
+    </div>
   {% else %}
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
       {% for quiz in quizzes %}

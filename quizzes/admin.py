@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Choice, Invitation, JoinRequest, Question, Quiz
+from .models import Category, Choice, Invitation, JoinRequest, Question, Quiz, Tag
 
 
 class ChoiceInline(admin.TabularInline):
@@ -22,20 +22,45 @@ class QuestionInline(admin.StackedInline):
 @admin.register(Quiz)
 class QuizAdmin(admin.ModelAdmin):
     list_display = (
-        "title", "creator", "visibility", "is_published",
+        "title", "creator", "category", "visibility", "is_published",
         "is_active", "closes_at", "question_count", "total_points", "created_at",
     )
-    list_filter = ("visibility", "is_published", "is_active", "created_at")
+    list_filter = ("category", "visibility", "is_published", "is_active", "created_at")
     search_fields = ("title", "description", "creator__username")
     prepopulated_fields = {"slug": ("title",)}
+    filter_horizontal = ("tags",)
     inlines = [QuestionInline]
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
         (None, {"fields": ("creator", "title", "slug", "description")}),
+        ("Categorization", {"fields": ("category", "tags")}),
         ("Access", {"fields": ("visibility", "is_published", "is_active", "closes_at")}),
         ("Behavior", {"fields": ("allow_retakes", "show_results_immediately", "pass_score")}),
         ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
     )
+
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ("name", "icon", "order", "quiz_count")
+    list_editable = ("order",)
+    prepopulated_fields = {"slug": ("name",)}
+    search_fields = ("name",)
+
+    @admin.display(description="Quizzes")
+    def quiz_count(self, obj):
+        return obj.quizzes.count()
+
+
+@admin.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ("name", "slug", "quiz_count", "created_at")
+    search_fields = ("name", "slug")
+    readonly_fields = ("created_at",)
+
+    @admin.display(description="Quizzes")
+    def quiz_count(self, obj):
+        return obj.quizzes.count()
 
 
 @admin.register(Question)

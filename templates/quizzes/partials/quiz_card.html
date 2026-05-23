@@ -11,6 +11,11 @@
       {% if quiz.visibility == 'private' %}
         <span class="badge badge-outline badge-sm">Private</span>
       {% endif %}
+      {% if quiz.category %}
+        <span class="badge badge-primary badge-sm">
+          {% if quiz.category.icon %}{{ quiz.category.icon }} {% endif %}{{ quiz.category.name }}
+        </span>
+      {% endif %}
       <span class="badge badge-outline badge-sm">
         {{ quiz.question_count }} Q &middot; {{ quiz.total_points }} pts
       </span>
@@ -24,6 +29,17 @@
     </h3>
 
     <p class="text-sm opacity-70 line-clamp-2">{{ quiz.description|default:"No description." }}</p>
+
+    {% if quiz.tags.all %}
+      <div class="flex flex-wrap gap-1 mt-2">
+        {% for tag in quiz.tags.all|slice:":4" %}
+          <span class="badge badge-ghost badge-sm">#{{ tag.name }}</span>
+        {% endfor %}
+        {% if quiz.tags.count > 4 %}
+          <span class="text-xs opacity-60">+{{ quiz.tags.count|add:"-4" }}</span>
+        {% endif %}
+      </div>
+    {% endif %}
 
     <div class="flex items-center gap-2 mt-2 text-xs opacity-60">
       <span>by
