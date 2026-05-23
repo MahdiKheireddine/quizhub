@@ -3,7 +3,10 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
+
+from core.email import send_notification
 
 from .forms import CreatorRequestForm
 from .models import CreatorRequest, User
@@ -89,6 +92,14 @@ def approve_creator_request(request, pk):
         return redirect("accounts:creator_requests_admin")
 
     cr.approve(request.user)
+    send_notification(
+        recipient=cr.user,
+        subject="Your creator request was approved",
+        template_base="emails/creator_request_approved",
+        context={
+            "quizzes_url": request.build_absolute_uri(reverse("quizzes:my_quizzes")),
+        },
+    )
     messages.success(request, f"Approved {cr.user.username}'s creator request.")
     return redirect("accounts:creator_requests_admin")
 
@@ -109,6 +120,15 @@ def reject_creator_request(request, pk):
 
     note = request.POST.get("note", "").strip()
     cr.reject(request.user, note=note)
+    send_notification(
+        recipient=cr.user,
+        subject="Your creator request was reviewed",
+        template_base="emails/creator_request_rejected",
+        context={
+            "review_note": cr.review_note,
+            "request_again_url": request.build_absolute_uri(reverse("accounts:request_creator")),
+        },
+    )
     messages.success(request, f"Rejected {cr.user.username}'s creator request.")
     return redirect("accounts:creator_requests_admin")
 

@@ -1,0 +1,22 @@
+{% extends "emails/_base.html" %}
+{% block body %}
+  <p>Hi {{ recipient.username }},</p>
+
+  <p>
+    <strong>{{ inviter.username }}</strong> invited you to take a private quiz on {{ site_name }}:
+  </p>
+
+  <p style="background:#f4f4f5;padding:16px;border-radius:6px;">
+    <strong style="font-size:17px;">{{ quiz.title }}</strong>
+    {% if quiz.description %}<br><span style="color:#666;">{{ quiz.description|truncatewords:30 }}</span>{% endif %}
+  </p>
+
+  <p>
+    <a href="{{ invitations_url }}"
+       style="display:inline-block;background:#4f46e5;color:white;padding:10px 20px;text-decoration:none;border-radius:6px;">
+      View invitation
+    </a>
+  </p>
+
+  <p style="color:#666;font-size:13px;">Or paste this into your browser: {{ invitations_url }}</p>
+{% endblock %}

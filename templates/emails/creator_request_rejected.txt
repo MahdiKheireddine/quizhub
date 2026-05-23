@@ -1,0 +1,11 @@
+Hi {{ recipient.username }},
+
+Your creator request on {{ site_name }} was reviewed but not approved this time.
+{% if review_note %}
+Reviewer note:
+  {{ review_note }}
+{% endif %}
+You can submit a new request whenever you're ready:
+  {{ request_again_url }}
+
+— The {{ site_name }} team

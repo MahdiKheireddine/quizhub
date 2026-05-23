@@ -1,0 +1,8 @@
+Hi {{ recipient.username }},
+
+Your access request for "{{ quiz.title }}" on {{ site_name }} was not approved.
+
+Plenty of other quizzes to take in the meantime:
+  {{ browse_url }}
+
+— The {{ site_name }} team

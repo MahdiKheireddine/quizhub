@@ -1,0 +1,11 @@
+Hi {{ recipient.username }},
+
+{{ inviter.username }} invited you to take a private quiz on {{ site_name }}:
+
+  {{ quiz.title }}
+  {{ quiz_url }}
+
+Log in to accept or decline the invitation:
+  {{ invitations_url }}
+
+— The {{ site_name }} team

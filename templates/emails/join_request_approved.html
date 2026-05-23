@@ -1,0 +1,21 @@
+{% extends "emails/_base.html" %}
+{% block body %}
+  <p>Hi {{ recipient.username }},</p>
+
+  <p>
+    Your access request for
+    <strong>{{ quiz.title }}</strong>
+    on {{ site_name }} was
+    <strong style="color:#16a34a;">approved</strong>.
+    You can take the quiz now.
+  </p>
+
+  <p>
+    <a href="{{ quiz_url }}"
+       style="display:inline-block;background:#4f46e5;color:white;padding:10px 20px;text-decoration:none;border-radius:6px;">
+      Take the quiz
+    </a>
+  </p>
+
+  <p style="color:#666;font-size:13px;">Or paste this into your browser: {{ quiz_url }}</p>
+{% endblock %}

@@ -6,9 +6,11 @@ from django.db.models import Count, Max, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_http_methods
 
+from core.email import send_notification
 from core.pagination import paginate
 
 from .forms import ChoiceForm, InviteUserForm, JoinRequestForm, QuestionForm, QuizForm
@@ -390,6 +392,21 @@ def quiz_invitations(request, slug):
                 invited_by=request.user,
                 status=Invitation.Status.PENDING,
             )
+            send_notification(
+                recipient=user,
+                subject="You've been invited to a quiz on QuizHub",
+                template_base="emails/invitation_received",
+                context={
+                    "inviter": request.user,
+                    "quiz": quiz,
+                    "quiz_url": request.build_absolute_uri(
+                        reverse("quizzes:public_detail", kwargs={"slug": quiz.slug})
+                    ),
+                    "invitations_url": request.build_absolute_uri(
+                        reverse("quizzes:my_invitations")
+                    ),
+                },
+            )
             messages.success(request, f"Invited {user.username}.")
             return redirect("quizzes:quiz_invitations", slug=quiz.slug)
     else:
@@ -465,12 +482,32 @@ def join_request_review(request, join_request_id, action):
                     "responded_at": timezone.now(),
                 },
             )
+        send_notification(
+            recipient=jr.user,
+            subject=f"Your request for '{jr.quiz.title}' was approved",
+            template_base="emails/join_request_approved",
+            context={
+                "quiz": jr.quiz,
+                "quiz_url": request.build_absolute_uri(
+                    reverse("quizzes:public_detail", kwargs={"slug": jr.quiz.slug})
+                ),
+            },
+        )
         messages.success(request, f"Approved {jr.user.username}'s request.")
     elif action == "reject":
         jr.status = JoinRequest.Status.REJECTED
         jr.reviewed_by = request.user
         jr.reviewed_at = timezone.now()
         jr.save(update_fields=["status", "reviewed_by", "reviewed_at"])
+        send_notification(
+            recipient=jr.user,
+            subject=f"Your request for '{jr.quiz.title}' was reviewed",
+            template_base="emails/join_request_rejected",
+            context={
+                "quiz": jr.quiz,
+                "browse_url": request.build_absolute_uri(reverse("quizzes:browse")),
+            },
+        )
         messages.info(request, f"Rejected {jr.user.username}'s request.")
     else:
         messages.error(request, "Invalid action.")
@@ -547,6 +584,19 @@ def request_join(request, slug):
             jr.quiz = quiz
             jr.user = request.user
             jr.save()
+            send_notification(
+                recipient=quiz.creator,
+                subject=f"{request.user.username} requested access to '{quiz.title}'",
+                template_base="emails/join_request_received",
+                context={
+                    "requester": request.user,
+                    "quiz": quiz,
+                    "message": jr.message,
+                    "manage_url": request.build_absolute_uri(
+                        reverse("quizzes:quiz_invitations", kwargs={"slug": quiz.slug})
+                    ),
+                },
+            )
             messages.success(
                 request,
                 "Request sent. You'll be notified when the creator responds.",

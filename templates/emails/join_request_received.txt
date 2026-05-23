@@ -1,0 +1,13 @@
+Hi {{ recipient.username }},
+
+{{ requester.username }} requested access to your quiz on {{ site_name }}:
+
+  {{ quiz.title }}
+{% if message %}
+Their message:
+  {{ message }}
+{% endif %}
+Review the request:
+  {{ manage_url }}
+
+— The {{ site_name }} team
