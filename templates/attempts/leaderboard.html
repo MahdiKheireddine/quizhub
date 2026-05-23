@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard · {{ quiz.title }} · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+
+  {# Header #}
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <p class="text-sm opacity-60 uppercase tracking-wide">Leaderboard</p>
+      <h1 class="text-2xl font-bold">{{ quiz.title }}</h1>
+      <p class="text-sm opacity-70 mt-1">
+        Top {{ top_n }} of {{ total_participants }} participant{{ total_participants|pluralize }}
+      </p>
+    </div>
+    <a href="{% url 'quizzes:public_detail' slug=quiz.slug %}" class="btn btn-ghost btn-sm">&larr; Back to quiz</a>
+  </div>
+
+  {% if rows %}
+    <div class="card bg-base-100 border border-base-300 shadow-sm overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="w-16">Rank</th>
+              <th>Player</th>
+              <th class="text-right">Score</th>
+              <th class="text-right hidden sm:table-cell">Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+              <tr class="{% if r.is_current_user %}bg-primary/10 font-medium{% endif %}">
+                <td>
+                  {% if r.rank == 1 %}🥇
+                  {% elif r.rank == 2 %}🥈
+                  {% elif r.rank == 3 %}🥉
+                  {% else %}<span class="font-mono">{{ r.rank }}</span>{% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'accounts:creator_profile' r.user.username %}" class="link link-hover">
+                    {{ r.user.username }}
+                  </a>
+                  {% if r.is_current_user %}
+                    <span class="badge badge-primary badge-sm ml-1">You</span>
+                  {% endif %}
+                </td>
+                <td class="text-right">
+                  <span class="font-mono">{{ r.score }} / {{ r.max_score }}</span>
+                  <span class="text-xs opacity-60 ml-2">({{ r.percent }}%)</span>
+                </td>
+                <td class="text-right hidden sm:table-cell">
+                  <span class="text-xs font-mono">{{ r.time_spent_display|default:"—" }}</span>
+                </td>
+              </tr>
+            {% endfor %}
+
+            {% if current_user_row %}
+              <tr><td colspan="4" class="text-center opacity-40 py-1">···</td></tr>
+              <tr class="bg-primary/10 font-medium">
+                <td><span class="font-mono">{{ current_user_row.rank }}</span></td>
+                <td>
+                  {{ current_user_row.user.username }}
+                  <span class="badge badge-primary badge-sm ml-1">You</span>
+                </td>
+                <td class="text-right">
+                  <span class="font-mono">{{ current_user_row.score }} / {{ current_user_row.max_score }}</span>
+                  <span class="text-xs opacity-60 ml-2">({{ current_user_row.percent }}%)</span>
+                </td>
+                <td class="text-right hidden sm:table-cell">
+                  <span class="text-xs font-mono">{{ current_user_row.time_spent_display|default:"—" }}</span>
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    <div class="card bg-base-100 border border-base-300">
+      <div class="card-body items-center text-center py-12">
+        <p class="opacity-70">No one has finished this quiz yet. Be the first!</p>
+        {% if quiz.is_accepting_responses and user.is_authenticated %}
+          <a href="{% url 'attempts:start' slug=quiz.slug %}" class="btn btn-primary btn-sm mt-2">Take the quiz &rarr;</a>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

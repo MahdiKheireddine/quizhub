@@ -127,6 +127,12 @@
             {% endif %}
           {% endif %}
 
+          {% if quiz.results_visible %}
+            <a href="{% url 'attempts:leaderboard' slug=quiz.slug %}" class="btn btn-ghost btn-block btn-sm mt-2">
+              🏆 Leaderboard
+            </a>
+          {% endif %}
+
           <div class="divider my-3"></div>
 
           <ul class="text-sm space-y-1 opacity-80">

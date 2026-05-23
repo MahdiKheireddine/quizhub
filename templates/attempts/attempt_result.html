@@ -1,42 +1,93 @@
 {% extends "base.html" %}
+{% load humanize %}
 
 {% block title %}Result · {{ quiz.title }} · {{ SITE_NAME }}{% endblock %}
 
 {% block content %}
-<div class="max-w-xl mx-auto">
-  <div class="card bg-base-100 shadow-xl border border-base-300">
-    <div class="card-body items-center text-center py-10">
 
-      <div class="text-6xl">✅</div>
-      <h1 class="text-2xl font-bold">You finished {{ quiz.title }}!</h1>
+{# ───── Summary card ───── #}
+<div class="card bg-base-100 shadow-xl border border-base-300 max-w-4xl mx-auto">
+  <div class="card-body">
 
-      <div class="stats stats-vertical sm:stats-horizontal shadow-sm bg-base-200 w-full mt-4">
-        <div class="stat">
-          <div class="stat-title">Score</div>
-          <div class="stat-value">{{ attempt.score }} / {{ attempt.max_score }}</div>
-          <div class="stat-desc">{{ attempt.score_percent }}%</div>
+    <div class="text-center">
+      <p class="text-sm opacity-60 uppercase tracking-wide">Result</p>
+      <h1 class="text-2xl font-bold">{{ quiz.title }}</h1>
+    </div>
+
+    {% if results_visible %}
+      {# Score hero #}
+      <div class="text-center my-6">
+        <div class="text-6xl font-extrabold
+          {% if passed is True %}text-success
+          {% elif passed is False %}text-error
+          {% else %}text-primary{% endif %}">
+          {{ attempt.score_percent }}%
         </div>
-        {% if quiz.pass_score %}
-          <div class="stat">
-            <div class="stat-title">Pass mark</div>
-            <div class="stat-value text-base">{{ quiz.pass_score }}%</div>
-            <div class="stat-desc {% if attempt.score_percent >= quiz.pass_score %}text-success{% else %}text-error{% endif %}">
-              {% if attempt.score_percent >= quiz.pass_score %}Passed{% else %}Not passed{% endif %}
-            </div>
-          </div>
+        <div class="text-base-content/70 mt-1">
+          {{ attempt.score }} of {{ attempt.max_score }} points
+        </div>
+        {% if passed is True %}
+          <div class="badge badge-success badge-lg mt-3">Passed (&ge; {{ quiz.pass_score }}%)</div>
+        {% elif passed is False %}
+          <div class="badge badge-error badge-lg mt-3">Below {{ quiz.pass_score }}% pass mark</div>
         {% endif %}
       </div>
+    {% else %}
+      <div role="alert" class="alert alert-info my-6">
+        <span>
+          Your quiz has been submitted, but the creator releases results manually.
+          You'll be able to see your breakdown when they do.
+        </span>
+      </div>
+    {% endif %}
 
-      {% if quiz.show_results_immediately %}
-        <p class="text-sm opacity-70 mt-4">Detailed breakdown coming in the next update.</p>
-      {% else %}
-        <div role="alert" class="alert mt-4">
-          <span>Your score will be released by the creator. We'll let you know when it's available.</span>
+    {# Meta strip #}
+    <div class="stats stats-vertical sm:stats-horizontal shadow bg-base-200 w-full">
+      <div class="stat">
+        <div class="stat-title">Time spent</div>
+        <div class="stat-value text-base">
+          {{ time_spent_display|default:"—" }}
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Submitted</div>
+        <div class="stat-value text-base">{{ attempt.submitted_at|naturaltime }}</div>
+      </div>
+      {% if results_visible %}
+        <div class="stat">
+          <div class="stat-title">Leaderboard</div>
+          <div class="stat-value text-base">
+            <a href="{% url 'attempts:leaderboard' slug=quiz.slug %}" class="link link-primary">
+              See rank &rarr;
+            </a>
+          </div>
         </div>
       {% endif %}
+    </div>
 
-      <a href="{% url 'quizzes:public_detail' slug=quiz.slug %}" class="btn btn-ghost mt-4">Back to quiz</a>
+    {# Actions #}
+    <div class="flex flex-wrap gap-2 justify-center mt-6">
+      <a href="{% url 'quizzes:public_detail' slug=quiz.slug %}" class="btn btn-ghost">&larr; Back to quiz</a>
+      {% if can_retake %}
+        <a href="{% url 'attempts:start' slug=quiz.slug %}" class="btn btn-primary">Retake quiz</a>
+      {% endif %}
+      {% if results_visible %}
+        <a href="{% url 'attempts:leaderboard' slug=quiz.slug %}" class="btn btn-outline">🏆 Leaderboard</a>
+      {% endif %}
     </div>
   </div>
 </div>
+
+{# ───── Per-question breakdown ───── #}
+{% if results_visible %}
+  <div class="max-w-4xl mx-auto mt-8">
+    <h2 class="text-xl font-bold mb-4">Question breakdown</h2>
+    <div class="space-y-4">
+      {% for qa in questions_with_answers %}
+        {% include "attempts/partials/question_breakdown.html" with qa=qa forloop_counter=forloop.counter %}
+      {% endfor %}
+    </div>
+  </div>
+{% endif %}
+
 {% endblock %}

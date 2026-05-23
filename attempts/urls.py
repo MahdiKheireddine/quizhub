@@ -12,4 +12,5 @@ urlpatterns = [
     path("attempts/<int:attempt_id>/finalize/", views.attempt_submit, name="submit"),
     path("attempts/<int:attempt_id>/result/", views.attempt_result, name="result"),
     path("attempts/<int:attempt_id>/heartbeat/", views.attempt_heartbeat, name="heartbeat"),
+    path("q/<slug:slug>/leaderboard/", views.quiz_leaderboard, name="leaderboard"),
 ]

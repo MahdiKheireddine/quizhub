@@ -17,6 +17,14 @@ from .services import (
 )
 
 
+def _format_mm_ss(seconds):
+    """Format an integer second count as 'Xm YYs'. Returns None if seconds is None/0."""
+    if not seconds:
+        return None
+    m, s = divmod(int(seconds), 60)
+    return f"{m}m {s:02d}s"
+
+
 def _get_own_attempt(user, attempt_id):
     return get_object_or_404(
         Attempt.objects.select_related("quiz"),
@@ -184,11 +192,62 @@ def attempt_submit(request, attempt_id):
 
 @login_required
 def attempt_result(request, attempt_id):
-    """Placeholder for commit 16. For now, show a basic completion message."""
+    """Per-attempt result page. Score + per-question breakdown when results
+    are visible, else a friendly 'results pending' state.
+
+    Always visible to the attempt's owner. Other users get 404 (privacy)."""
     attempt = _get_own_attempt(request.user, attempt_id)
+    quiz = attempt.quiz
+
+    # Edge case: if the attempt was marked SUBMITTED but somehow not yet GRADED
+    # (e.g. score_attempt errored mid-way), grade it now. score_attempt is idempotent.
+    if attempt.status == Attempt.Status.SUBMITTED:
+        score_attempt(attempt)
+
+    results_visible = quiz.results_visible
+    questions_with_answers = []
+    if results_visible:
+        for question in attempt.ordered_questions():
+            answer = attempt.get_answer_for(question)
+            selected = list(answer.selected_choices.all()) if answer else []
+            all_choices = list(question.choices.all())
+            correct_ids = {c.id for c in all_choices if c.is_correct}
+            questions_with_answers.append({
+                "question": question,
+                "answer": answer,
+                "selected_ids": {c.id for c in selected},
+                "correct_ids": correct_ids,
+                "all_choices": all_choices,
+                "is_correct": answer.is_correct if answer else False,
+                "points_earned": answer.points_earned if answer else 0,
+            })
+
+    # Time spent (from start to submission).
+    time_spent_seconds = None
+    if attempt.submitted_at and attempt.started_at:
+        delta = attempt.submitted_at - attempt.started_at
+        time_spent_seconds = int(delta.total_seconds())
+
+    # Pass/fail badge — only meaningful if the quiz defines a pass_score.
+    passed = None
+    if quiz.pass_score is not None:
+        passed = attempt.score_percent >= quiz.pass_score
+
+    can_retake = (
+        quiz.allow_retakes
+        and quiz.is_accepting_responses
+        and attempt.is_finished
+    )
+
     return render(request, "attempts/attempt_result.html", {
         "attempt": attempt,
-        "quiz": attempt.quiz,
+        "quiz": quiz,
+        "results_visible": results_visible,
+        "questions_with_answers": questions_with_answers,
+        "time_spent_seconds": time_spent_seconds,
+        "time_spent_display": _format_mm_ss(time_spent_seconds),
+        "passed": passed,
+        "can_retake": can_retake,
     })
 
 
@@ -214,4 +273,84 @@ def attempt_heartbeat(request, attempt_id):
     return JsonResponse({
         "finished": False,
         "remaining": attempt.time_remaining_seconds,
+    })
+
+
+# ─── Leaderboard ────────────────────────────────────────────────────────
+
+def quiz_leaderboard(request, slug):
+    """Public leaderboard for a quiz.
+
+    404 if the quiz is unpublished OR if results aren't yet visible (creator
+    hasn't released them). Anyone allowed to see the quiz can see its board.
+    """
+    from django.http import Http404
+
+    from quizzes.queries import visible_quizzes
+
+    quiz = get_object_or_404(Quiz.objects.filter(is_published=True), slug=slug)
+
+    if not quiz.results_visible:
+        raise Http404("Leaderboard not yet available.")
+
+    if not visible_quizzes(request.user).filter(id=quiz.id).exists():
+        raise Http404
+
+    # Each user's BEST graded attempt: highest score, then earliest submission as
+    # tie-breaker for the initial pick. (Final display sorts by score then time
+    # spent, which is what we actually want to show.)
+    graded = (
+        Attempt.objects.filter(quiz=quiz, status=Attempt.Status.GRADED)
+        .select_related("user")
+    )
+
+    best_per_user = {}
+    for a in graded.order_by("-score", "submitted_at"):
+        if a.user_id not in best_per_user:
+            best_per_user[a.user_id] = a
+
+    ranked = sorted(
+        best_per_user.values(),
+        key=lambda a: (
+            -a.score,
+            (a.submitted_at - a.started_at).total_seconds()
+            if a.submitted_at else float("inf"),
+        ),
+    )
+
+    rows = []
+    for rank, a in enumerate(ranked, start=1):
+        time_spent = None
+        if a.submitted_at and a.started_at:
+            time_spent = int((a.submitted_at - a.started_at).total_seconds())
+        rows.append({
+            "rank": rank,
+            "attempt": a,
+            "user": a.user,
+            "score": a.score,
+            "max_score": a.max_score,
+            "percent": a.score_percent,
+            "time_spent_seconds": time_spent,
+            "time_spent_display": _format_mm_ss(time_spent),
+            "is_current_user": (
+                request.user.is_authenticated and a.user_id == request.user.id
+            ),
+        })
+
+    # Top N for display; if the current user is outside the top N but ranked,
+    # surface their row separately so they always see where they stand.
+    top_n = 20
+    top_rows = rows[:top_n]
+    current_user_row = None
+    if request.user.is_authenticated:
+        in_top = any(r["is_current_user"] for r in top_rows)
+        if not in_top:
+            current_user_row = next((r for r in rows if r["is_current_user"]), None)
+
+    return render(request, "attempts/leaderboard.html", {
+        "quiz": quiz,
+        "rows": top_rows,
+        "current_user_row": current_user_row,
+        "total_participants": len(rows),
+        "top_n": top_n,
     })

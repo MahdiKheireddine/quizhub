@@ -18,6 +18,7 @@ urlpatterns = [
     path("my/quizzes/<slug:slug>/delete/", views.quiz_delete, name="quiz_delete"),
     path("my/quizzes/<slug:slug>/publish/", views.quiz_toggle_publish, name="quiz_toggle_publish"),
     path("my/quizzes/<slug:slug>/active/", views.quiz_toggle_active, name="quiz_toggle_active"),
+    path("my/quizzes/<slug:slug>/release-results/", views.quiz_release_results, name="quiz_release_results"),
 
     # Question editor (HTMX-driven)
     path("my/quizzes/<slug:slug>/edit-questions/", views.edit_questions, name="edit_questions"),

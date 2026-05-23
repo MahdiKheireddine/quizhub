@@ -549,3 +549,21 @@ def request_join(request, slug):
         form = JoinRequestForm()
 
     return render(request, "quizzes/request_join.html", {"quiz": quiz, "form": form})
+
+
+@login_required
+@require_POST
+def quiz_release_results(request, slug):
+    """One-way action: release results to all participants for a quiz that
+    wasn't showing them immediately. Idempotent — re-clicking does nothing."""
+    quiz = _get_own_quiz(request.user, slug)
+    if quiz.results_released_at is None:
+        quiz.results_released_at = timezone.now()
+        quiz.save(update_fields=["results_released_at", "updated_at"])
+        messages.success(
+            request,
+            f"Results released for '{quiz.title}'. Participants can now see their scores.",
+        )
+    else:
+        messages.info(request, "Results were already released.")
+    return redirect("quizzes:detail", slug=quiz.slug)

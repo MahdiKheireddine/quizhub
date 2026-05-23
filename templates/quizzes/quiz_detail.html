@@ -41,11 +41,18 @@
             <span class="badge badge-outline">{{ quiz.get_visibility_display }}</span>
           </div>
         </div>
-        {% if quiz.is_published and quiz.visibility == 'public' %}
-          <a href="{% url 'quizzes:public_detail' slug=quiz.slug %}" class="link link-hover text-sm whitespace-nowrap">
-            View public page &rarr;
-          </a>
-        {% endif %}
+        <div class="flex flex-col items-end gap-1">
+          {% if quiz.is_published and quiz.visibility == 'public' %}
+            <a href="{% url 'quizzes:public_detail' slug=quiz.slug %}" class="link link-hover text-sm whitespace-nowrap">
+              View public page &rarr;
+            </a>
+          {% endif %}
+          {% if quiz.is_published and quiz.results_visible %}
+            <a href="{% url 'attempts:leaderboard' slug=quiz.slug %}" class="link link-hover text-sm whitespace-nowrap">
+              View leaderboard &rarr;
+            </a>
+          {% endif %}
+        </div>
       </div>
 
       {% if quiz.description %}
@@ -90,6 +97,21 @@
               <button type="submit" class="btn btn-success btn-sm">Resume</button>
             {% endif %}
           </form>
+        {% endif %}
+
+        {# Release results — only meaningful for deferred-results quizzes. One-way action. #}
+        {% if quiz.is_published and not quiz.show_results_immediately %}
+          {% if quiz.results_released_at %}
+            <span class="badge badge-success gap-1" title="Released {{ quiz.results_released_at|timesince }} ago">
+              Results released
+            </span>
+          {% else %}
+            <form method="post" action="{% url 'quizzes:quiz_release_results' slug=quiz.slug %}" class="contents"
+                  onsubmit="return confirm('Release results to all participants? This cannot be undone.')">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-warning btn-sm">Release results</button>
+            </form>
+          {% endif %}
         {% endif %}
       </div>
 

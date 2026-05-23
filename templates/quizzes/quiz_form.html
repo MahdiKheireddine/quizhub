@@ -105,6 +105,13 @@
         {% for e in form.show_results_immediately.errors %}<p class="text-error text-xs">{{ e }}</p>{% endfor %}
 
         <fieldset class="fieldset w-full">
+          <legend class="fieldset-legend">{{ form.results_released_at.label }}</legend>
+          {{ form.results_released_at }}
+          {% if form.results_released_at.help_text %}<p class="fieldset-label opacity-70">{{ form.results_released_at.help_text }}</p>{% endif %}
+          {% for e in form.results_released_at.errors %}<p class="fieldset-label text-error">{{ e }}</p>{% endfor %}
+        </fieldset>
+
+        <fieldset class="fieldset w-full">
           <legend class="fieldset-legend">{{ form.pass_score.label }}</legend>
           {{ form.pass_score }}
           <p class="fieldset-label opacity-70">Leave blank for no pass mark.</p>

@@ -1,0 +1,66 @@
+
+<div class="card bg-base-100 border
+  {% if qa.is_correct %}border-success/40{% else %}border-error/40{% endif %}
+  shadow-sm">
+  <div class="card-body p-5">
+
+    {# Header: number, type, correctness, points #}
+    <div class="flex items-start justify-between gap-2 flex-wrap">
+      <div class="flex items-center gap-2">
+        <span class="badge badge-ghost font-mono">Q{{ forloop_counter }}</span>
+        <span class="text-xs opacity-60">{{ qa.question.get_type_display }}</span>
+      </div>
+      <div class="flex items-center gap-2">
+        {% if qa.is_correct %}
+          <span class="badge badge-success">✓ Correct</span>
+        {% else %}
+          <span class="badge badge-error">✗ Incorrect</span>
+        {% endif %}
+        <span class="text-sm font-mono">
+          {{ qa.points_earned }} / {{ qa.question.points }} pts
+        </span>
+      </div>
+    </div>
+
+    <p class="mt-3 font-medium whitespace-pre-wrap">{{ qa.question.text }}</p>
+
+    {# Choices — color-coded against correct_ids ∩ selected_ids #}
+    <ul class="mt-3 space-y-1">
+      {% for choice in qa.all_choices %}
+        <li class="flex items-start gap-2 p-2 rounded
+          {% if choice.id in qa.correct_ids and choice.id in qa.selected_ids %}
+            bg-success/10 border border-success/40
+          {% elif choice.id in qa.correct_ids %}
+            bg-success/5 border border-success/30
+          {% elif choice.id in qa.selected_ids %}
+            bg-error/10 border border-error/40
+          {% else %}
+            border border-base-300
+          {% endif %}">
+          <span class="mt-0.5 w-4 shrink-0">
+            {% if choice.id in qa.correct_ids and choice.id in qa.selected_ids %}
+              <span class="text-success font-bold">✓</span>
+            {% elif choice.id in qa.correct_ids %}
+              <span class="text-success">●</span>
+            {% elif choice.id in qa.selected_ids %}
+              <span class="text-error font-bold">✗</span>
+            {% else %}
+              <span class="opacity-30">○</span>
+            {% endif %}
+          </span>
+          <span class="flex-1">{{ choice.text }}</span>
+          <span class="text-xs opacity-60 whitespace-nowrap">
+            {% if choice.id in qa.correct_ids and choice.id in qa.selected_ids %}your pick · correct
+            {% elif choice.id in qa.correct_ids %}correct answer
+            {% elif choice.id in qa.selected_ids %}your pick · wrong
+            {% endif %}
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+
+    {% if not qa.answer %}
+      <div class="mt-3 text-sm opacity-60 italic">You didn't answer this question.</div>
+    {% endif %}
+  </div>
+</div>

@@ -25,7 +25,7 @@ class QuizForm(forms.ModelForm):
             # tags handled separately via the tags_raw CharField below
             "visibility",
             "is_active", "closes_at", "time_limit_minutes",
-            "allow_retakes", "show_results_immediately", "pass_score",
+            "allow_retakes", "show_results_immediately", "results_released_at", "pass_score",
         ]
         widgets = {
             "title": forms.TextInput(attrs={
@@ -38,6 +38,10 @@ class QuizForm(forms.ModelForm):
             "category": forms.Select(attrs={"class": SELECT}),
             "visibility": forms.Select(attrs={"class": SELECT}),
             "closes_at": forms.DateTimeInput(
+                attrs={"class": INPUT, "type": "datetime-local"},
+                format="%Y-%m-%dT%H:%M",
+            ),
+            "results_released_at": forms.DateTimeInput(
                 attrs={"class": INPUT, "type": "datetime-local"},
                 format="%Y-%m-%dT%H:%M",
             ),
@@ -59,6 +63,7 @@ class QuizForm(forms.ModelForm):
             "show_results_immediately": "Show users their score immediately after submitting",
             "pass_score": "Pass score (%)",
             "time_limit_minutes": "Time limit (minutes, optional)",
+            "results_released_at": "Results released at (optional)",
         }
         help_texts = {
             "visibility": "Public quizzes are visible to all users. Private ones require invitation or approval.",
@@ -66,6 +71,11 @@ class QuizForm(forms.ModelForm):
             "time_limit_minutes": (
                 "Total time for the whole quiz. Counter starts when the user begins. "
                 "Leave blank for no time limit."
+            ),
+            "results_released_at": (
+                "If 'Show results immediately' is off, set this to reveal scores to participants. "
+                "Leave blank to keep results hidden. The 'Release results' button on the quiz page "
+                "sets this to now in one click."
             ),
         }
 

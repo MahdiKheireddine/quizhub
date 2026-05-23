@@ -35,7 +35,7 @@ class QuizAdmin(admin.ModelAdmin):
         (None, {"fields": ("creator", "title", "slug", "description")}),
         ("Categorization", {"fields": ("category", "tags")}),
         ("Access", {"fields": ("visibility", "is_published", "is_active", "closes_at")}),
-        ("Behavior", {"fields": ("allow_retakes", "show_results_immediately", "pass_score")}),
+        ("Behavior", {"fields": ("allow_retakes", "show_results_immediately", "pass_score", "results_released_at")}),
         ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
     )
 

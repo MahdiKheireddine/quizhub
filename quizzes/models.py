@@ -120,6 +120,14 @@ class Quiz(models.Model):
     is_published = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     closes_at = models.DateTimeField(null=True, blank=True)
+    results_released_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text=(
+            "Set when the creator releases results for a quiz that wasn't showing "
+            "them immediately. Once set, all participants can see their detailed "
+            "breakdown."
+        ),
+    )
     time_limit_minutes = models.PositiveIntegerField(
         null=True, blank=True,
         help_text=(
@@ -184,6 +192,15 @@ class Quiz(models.Model):
         if self.closes_at is None:
             return True
         return self.closes_at > timezone.now()
+
+    @property
+    def results_visible(self):
+        """Whether per-question results should be revealed to participants right now.
+
+        True if either the quiz is configured to show results immediately, OR
+        the creator has manually released results.
+        """
+        return self.show_results_immediately or self.results_released_at is not None
 
     def get_absolute_url(self):
         return reverse("quizzes:detail", kwargs={"slug": self.slug})
