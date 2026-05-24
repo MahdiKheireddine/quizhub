@@ -45,6 +45,9 @@ INSTALLED_APPS = [
 
     "allauth",
     "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
+    "allauth.socialaccount.providers.facebook",
 
     "accounts",
     "core",
@@ -165,6 +168,29 @@ ACCOUNT_SESSION_REMEMBER = True
 ACCOUNT_LOGOUT_ON_GET = False
 LOGIN_REDIRECT_URL = "/"
 ACCOUNT_LOGOUT_REDIRECT_URL = "/"
+
+# django-allauth socialaccount
+SOCIALACCOUNT_LOGIN_ON_GET = True   # one-click login (skip the intermediate confirm page)
+SOCIALACCOUNT_AUTO_SIGNUP = True    # if email matches an existing user, link automatically
+SOCIALACCOUNT_EMAIL_VERIFICATION = "none"  # trust Google/Facebook to verify
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+        "OAUTH_PKCE_ENABLED": True,
+    },
+    "facebook": {
+        "METHOD": "oauth2",
+        "SDK_URL": "//connect.facebook.net/{locale}/sdk.js",
+        "SCOPE": ["email", "public_profile"],
+        "AUTH_PARAMS": {"auth_type": "reauthenticate"},
+        "INIT_PARAMS": {"cookie": True},
+        "FIELDS": ["id", "first_name", "last_name", "name", "email", "verified", "locale"],
+        "EXCHANGE_TOKEN": True,
+        "VERIFIED_EMAIL": True,
+    },
+}
 
 # Email (dev): print messages to the console instead of sending them.
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

@@ -1,5 +1,5 @@
 {% extends "account/base.html" %}
-{% load allauth account %}
+{% load allauth account socialaccount %}
 
 {% block title %}Log in · {{ SITE_NAME }}{% endblock %}
 
@@ -61,6 +61,8 @@
 
         <button type="submit" class="btn btn-primary w-full mt-2">Log in</button>
       </form>
+
+      {% include "account/_social_buttons.html" %}
 
       <div class="divider my-4"></div>
 

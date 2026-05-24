@@ -1,5 +1,7 @@
 from django.apps import apps
 
+from accounts.social import get_configured_providers
+
 
 def site_meta(request):
     """Expose site-wide context to every template."""
@@ -11,6 +13,13 @@ def site_meta(request):
         except LookupError:
             pass
 
+    # Defensive: never let a broken provider lookup break every page render.
+    configured_providers = []
+    try:
+        configured_providers = get_configured_providers()
+    except Exception:
+        pass
+
     return {
         "SITE_NAME": "QuizHub",
         # daisyUI themes available in the picker.
@@ -20,4 +29,5 @@ def site_meta(request):
             "synthwave", "dracula", "lemonade",
         ],
         "pending_creator_requests": pending_creator_requests,
+        "configured_social_providers": configured_providers,
     }
