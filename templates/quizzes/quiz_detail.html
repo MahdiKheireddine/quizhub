@@ -107,7 +107,8 @@
             </span>
           {% else %}
             <form method="post" action="{% url 'quizzes:quiz_release_results' slug=quiz.slug %}" class="contents"
-                  onsubmit="return confirm('Release results to all participants? This cannot be undone.')">
+                  data-confirm-submit="Release results to all participants? This cannot be undone."
+                  data-confirm-label="Release results">
               {% csrf_token %}
               <button type="submit" class="btn btn-warning btn-sm">Release results</button>
             </form>

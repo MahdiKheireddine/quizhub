@@ -57,7 +57,9 @@
               type="submit"
               name="action_remove"
               class="btn btn-error btn-sm"
-              @click="if (!confirm('Remove the selected email address?')) { $event.preventDefault(); }"
+              data-confirm="Remove the selected email address?"
+              data-confirm-danger="true"
+              data-confirm-label="Remove"
             >
               Remove
             </button>

@@ -108,6 +108,92 @@
       const toasts = Array.isArray(event.detail) ? event.detail : [event.detail];
       toasts.forEach(fireToast);
     });
+
+    // ─── Confirmation modals ──────────────────────────────────────────────
+    // Replaces the browser's native confirm() with theme-aware SweetAlert.
+    // Triggers:
+    //   1. hx-confirm="message"          → intercepted via htmx:confirm event
+    //   2. data-confirm="message"        → on any clickable element
+    //   3. data-confirm-submit="message" → on a <form>
+    //
+    // Style hints (optional, set on the same element):
+    //   - data-confirm-danger="true"     → red confirm + warning icon
+    //   - data-confirm-label="Delete it" → custom confirm button text
+    async function confirmAction({ message, title = 'Are you sure?', danger = false, confirmLabel }) {
+      const result = await Swal.fire({
+        title,
+        text: message,
+        icon: danger ? 'warning' : 'question',
+        showCancelButton: true,
+        confirmButtonText: confirmLabel || (danger ? 'Yes, do it' : 'Confirm'),
+        cancelButtonText: 'Cancel',
+        reverseButtons: true,    // Cancel on the left, Confirm on the right (Mac convention)
+        focusCancel: true,       // Always default-focus Cancel — safer for both danger and non-danger
+        background: cssColor('--color-base-100'),
+        color: cssColor('--color-base-content'),
+        iconColor: cssColor(danger ? '--color-error' : '--color-primary'),
+        customClass: {
+          popup: 'rounded-xl shadow-2xl',
+          title: 'font-bold text-lg',
+          htmlContainer: 'text-sm opacity-80',
+          confirmButton: danger ? 'btn btn-error' : 'btn btn-primary',
+          cancelButton: 'btn btn-ghost',
+          actions: 'gap-2',
+        },
+        buttonsStyling: false,   // we style via customClass, disable Swal's inline styles
+      });
+      return result.isConfirmed;
+    }
+
+    // 1. HTMX hx-confirm — intercept before the request fires.
+    document.body.addEventListener('htmx:confirm', function (event) {
+      if (!event.detail.question) return;  // no hx-confirm; not our concern
+      event.preventDefault();
+      const trigger = event.detail.elt;
+      confirmAction({
+        message: event.detail.question,
+        danger: trigger?.dataset?.confirmDanger === 'true',
+        confirmLabel: trigger?.dataset?.confirmLabel,
+      }).then((ok) => { if (ok) event.detail.issueRequest(); });
+    });
+
+    // 2. data-confirm on any clickable element (link, button).
+    //    Capture phase so we beat other click handlers (HTMX, navigation, …).
+    document.body.addEventListener('click', function (event) {
+      const el = event.target.closest('[data-confirm]');
+      if (!el) return;
+      if (el.dataset.confirmedAlready === 'true') return;  // re-fired click, let it through
+      event.preventDefault();
+      event.stopPropagation();
+      confirmAction({
+        message: el.dataset.confirm,
+        danger: el.dataset.confirmDanger === 'true',
+        confirmLabel: el.dataset.confirmLabel,
+      }).then((ok) => {
+        if (!ok) return;
+        el.dataset.confirmedAlready = 'true';
+        el.click();
+        el.dataset.confirmedAlready = 'false';
+      });
+    }, true);
+
+    // 3. data-confirm-submit on a form.
+    document.body.addEventListener('submit', function (event) {
+      const form = event.target;
+      const msg = form.dataset?.confirmSubmit;
+      if (!msg) return;
+      if (form.dataset.confirmedAlready === 'true') return;
+      event.preventDefault();
+      confirmAction({
+        message: msg,
+        danger: form.dataset.confirmDanger === 'true',
+        confirmLabel: form.dataset.confirmLabel,
+      }).then((ok) => {
+        if (!ok) return;
+        form.dataset.confirmedAlready = 'true';
+        form.submit();
+      });
+    }, true);
   })();
   </script>
 </body>
