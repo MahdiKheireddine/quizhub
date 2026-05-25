@@ -21,6 +21,11 @@ from .queries import (
     user_pending_join_request_for,
     visible_quizzes,
 )
+from .stats import (
+    creator_overview_stats,
+    creator_per_quiz_stats,
+    creator_recent_activity,
+)
 
 
 def _require_creator(user):
@@ -42,6 +47,17 @@ def my_quizzes(request):
     _require_creator(request.user)
     quizzes = Quiz.objects.filter(creator=request.user).order_by("-updated_at")
     return render(request, "quizzes/my_quizzes.html", {"quizzes": quizzes})
+
+
+@login_required
+def creator_dashboard(request):
+    """Aggregated stats over the creator's own quizzes."""
+    _require_creator(request.user)
+    return render(request, "quizzes/creator_dashboard.html", {
+        "overview": creator_overview_stats(request.user),
+        "per_quiz": creator_per_quiz_stats(request.user),
+        "recent_activity": creator_recent_activity(request.user),
+    })
 
 
 @login_required

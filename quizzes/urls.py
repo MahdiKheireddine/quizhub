@@ -11,6 +11,7 @@ urlpatterns = [
     path("q/<slug:slug>/request-access/", views.request_join, name="request_join"),
 
     # Creator dashboard
+    path("my/dashboard/", views.creator_dashboard, name="creator_dashboard"),
     path("my/quizzes/", views.my_quizzes, name="my_quizzes"),
     path("my/quizzes/new/", views.quiz_create, name="quiz_create"),
     path("my/quizzes/<slug:slug>/", views.quiz_detail, name="detail"),

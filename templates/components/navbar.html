@@ -68,6 +68,7 @@
               </div>
             </li>
             {% if user.can_create_quizzes %}
+              <li><a href="{% url 'quizzes:creator_dashboard' %}" class="font-medium">📊 Dashboard</a></li>
               <li><a href="{% url 'quizzes:my_quizzes' %}">📋 My quizzes</a></li>
               <li><a href="{% url 'accounts:creator_profile' user.username %}">My public profile</a></li>
             {% endif %}

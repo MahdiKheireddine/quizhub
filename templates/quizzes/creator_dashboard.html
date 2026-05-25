@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Dashboard · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+
+  {# ───── Header ───── #}
+  <div class="flex items-center justify-between mb-6 flex-wrap gap-2">
+    <div>
+      <p class="text-sm opacity-60 uppercase tracking-wide">Dashboard</p>
+      <h1 class="text-2xl font-bold">Welcome back, {{ user.username }}</h1>
+    </div>
+    <a href="{% url 'quizzes:quiz_create' %}" class="btn btn-primary btn-sm">+ New quiz</a>
+  </div>
+
+  {# ───── Top stats ───── #}
+  {% if overview.quiz_count > 0 %}
+    <div class="stats stats-vertical lg:stats-horizontal shadow bg-base-100 w-full mb-6">
+      <div class="stat">
+        <div class="stat-title">Quizzes</div>
+        <div class="stat-value text-primary">{{ overview.published_count }}</div>
+        <div class="stat-desc">
+          {{ overview.quiz_count }} total
+          ({{ overview.drafts_count }} draft{{ overview.drafts_count|pluralize }})
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Attempts</div>
+        <div class="stat-value">{{ overview.total_attempts|intcomma }}</div>
+        <div class="stat-desc">Graded attempts on your quizzes</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Participants</div>
+        <div class="stat-value">{{ overview.unique_participants|intcomma }}</div>
+        <div class="stat-desc">Unique users</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Avg score</div>
+        <div class="stat-value text-secondary">{{ overview.avg_score_percent }}%</div>
+        <div class="stat-desc">Across all graded attempts</div>
+      </div>
+    </div>
+  {% endif %}
+
+  {# ───── Per-quiz table ───── #}
+  <div class="card bg-base-100 shadow-sm border border-base-300 mb-6">
+    <div class="card-body">
+      <h2 class="card-title">Your quizzes</h2>
+
+      {% if per_quiz %}
+        <div class="overflow-x-auto -mx-6 px-6">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Quiz</th>
+                <th class="text-right">Attempts</th>
+                <th class="text-right">Avg score</th>
+                <th class="text-right hidden md:table-cell">Top scorer</th>
+                <th class="text-right">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in per_quiz %}
+                <tr>
+                  <td>
+                    <a href="{% url 'quizzes:detail' slug=row.quiz.slug %}" class="link link-hover font-medium">
+                      {{ row.quiz.title|truncatechars:50 }}
+                    </a>
+                  </td>
+                  <td class="text-right font-mono">{{ row.attempts_count }}</td>
+                  <td class="text-right font-mono">
+                    {% if row.attempts_count %}{{ row.avg_score_percent }}%{% else %}—{% endif %}
+                  </td>
+                  <td class="text-right hidden md:table-cell">
+                    {% if row.top_scorer %}
+                      <a href="{% url 'accounts:creator_profile' row.top_scorer.username %}"
+                         class="link link-hover">
+                        {{ row.top_scorer.username }}
+                      </a>
+                      <span class="text-xs opacity-60">({{ row.top_score }})</span>
+                    {% else %}—{% endif %}
+                  </td>
+                  <td class="text-right">
+                    {% if row.quiz.is_published %}
+                      {% if row.quiz.is_accepting_responses %}
+                        <span class="badge badge-success badge-sm">Live</span>
+                      {% else %}
+                        <span class="badge badge-warning badge-sm">Paused</span>
+                      {% endif %}
+                    {% else %}
+                      <span class="badge badge-ghost badge-sm">Draft</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="text-center py-8">
+          <p class="opacity-60 mb-3">You haven't created any quizzes yet.</p>
+          <a href="{% url 'quizzes:quiz_create' %}" class="btn btn-primary btn-sm">
+            Build your first quiz &rarr;
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# ───── Recent activity ───── #}
+  {% if recent_activity %}
+    <div class="card bg-base-100 shadow-sm border border-base-300">
+      <div class="card-body">
+        <h2 class="card-title">Recent activity</h2>
+        <ul class="divide-y divide-base-200">
+          {% for attempt in recent_activity %}
+            <li class="py-3 flex items-center justify-between gap-4">
+              <div class="min-w-0 flex-1">
+                <p class="text-sm">
+                  <a href="{% url 'accounts:creator_profile' attempt.user.username %}" class="link link-hover font-medium">{{ attempt.user.username }}</a>
+                  finished
+                  <a href="{% url 'quizzes:detail' slug=attempt.quiz.slug %}" class="link link-hover font-medium">{{ attempt.quiz.title|truncatechars:40 }}</a>
+                </p>
+                <p class="text-xs opacity-60">{{ attempt.submitted_at|naturaltime }}</p>
+              </div>
+              <div class="text-right shrink-0">
+                <p class="font-mono">{{ attempt.score }} / {{ attempt.max_score }}</p>
+                <p class="text-xs opacity-60">{{ attempt.score_percent }}%</p>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
