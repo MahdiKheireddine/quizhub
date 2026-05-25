@@ -53,6 +53,8 @@ INSTALLED_APPS = [
     "core",
     "quizzes",
     "attempts",
+
+    "django_htmx",
 ]
 
 TAILWIND_APP_NAME = "theme"
@@ -69,6 +71,8 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_htmx.middleware.HtmxMiddleware',
+    'core.middleware.HtmxMessagesMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -195,6 +199,17 @@ SOCIALACCOUNT_PROVIDERS = {
 # Email (dev): print messages to the console instead of sending them.
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = "noreply@quizhub.local"
+
+
+# SweetAlert toast defaults — read by base.html on every page load.
+# Override per-message by passing extra_tags="position:top-end timer:5000" etc.
+TOAST_DEFAULTS = {
+    "position": "top",            # top, top-start, top-end, bottom, bottom-start, bottom-end, center
+    "timer": 3000,                # ms; 0 = no auto-dismiss
+    "timerProgressBar": True,
+    "showConfirmButton": False,
+    "toast": True,
+}
 
 
 if DEBUG:

@@ -16,30 +16,14 @@
   <script defer src="https://unpkg.com/htmx.org@1.9.12"></script>
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+  {# SweetAlert2 — used by the toast system below #}
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.5/dist/sweetalert2.all.min.js"></script>
+
   {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-screen bg-base-200 text-base-content flex flex-col antialiased">
 
   {% include "components/navbar.html" %}
-
-  {% if messages %}
-    <div class="container mx-auto px-4 mt-4 space-y-2">
-      {% for message in messages %}
-        <div
-          x-data="{ show: true }"
-          x-show="show"
-          x-transition.opacity
-          role="alert"
-          class="alert alert-{{ message.tags }}"
-        >
-          <span>{{ message }}</span>
-          <button type="button" class="btn btn-ghost btn-sm btn-square" @click="show = false" aria-label="Dismiss">
-            &times;
-          </button>
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
 
   <main class="flex-1 container mx-auto px-4 py-8">
     {% block content %}{% endblock %}
@@ -48,5 +32,83 @@
   {% include "components/footer.html" %}
 
   {% block extra_js %}{% endblock %}
+
+  {# ─── Toast system: page-load + HTMX responses ──────────────────────── #}
+  <script>
+  (function () {
+    // ─── Read theme-aware colors from CSS variables ──────────────────────
+    // daisyUI v5 exposes semantic vars as fully-formed colors:
+    //   --color-primary, --color-success, --color-info, --color-warning,
+    //   --color-error, --color-base-100, --color-base-content, …
+    // Values are oklch(…) strings — use them directly, no wrapping.
+    function cssColor(varName) {
+      const raw = getComputedStyle(document.documentElement)
+        .getPropertyValue(varName).trim();
+      return raw || null;
+    }
+
+    // Level → SweetAlert icon + which daisyUI color var to tint the icon with.
+    function configForLevel(level) {
+      const map = {
+        success: { icon: 'success', colorVar: '--color-success' },
+        info:    { icon: 'info',    colorVar: '--color-info' },
+        warning: { icon: 'warning', colorVar: '--color-warning' },
+        error:   { icon: 'error',   colorVar: '--color-error' },
+        debug:   { icon: 'info',    colorVar: '--color-info' },
+      };
+      return map[level] || map.info;
+    }
+
+    const DEFAULTS = {{ toast_defaults|default:"{}"|safe }};
+
+    function fireToast({ level, message, extras }) {
+      if (typeof Swal === 'undefined') {
+        console.warn('SweetAlert2 not loaded; toast skipped:', message);
+        return;
+      }
+      const cfg = configForLevel(level);
+      const opts = Object.assign({}, DEFAULTS, extras || {}, {
+        icon: cfg.icon,
+        title: message,
+        background: cssColor('--color-base-100'),
+        color: cssColor('--color-base-content'),
+        iconColor: cssColor(cfg.colorVar),
+        customClass: {
+          popup: 'rounded-xl shadow-lg px-4 py-3 text-sm',
+          title: 'font-medium',
+        },
+        didOpen: (toast) => {
+          toast.addEventListener('mouseenter', Swal.stopTimer);
+          toast.addEventListener('mouseleave', Swal.resumeTimer);
+        },
+      });
+      Swal.fire(opts);
+    }
+
+    // ─── Page-load messages (from Django session storage) ────────────────
+    {% if messages %}
+      const pageLoadMessages = [
+        {% for message in messages %}
+          {
+            level: "{{ message.tags|default:'info'|escapejs }}",
+            message: "{{ message|escapejs }}",
+            extras: {},
+          }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+      ];
+      document.addEventListener('DOMContentLoaded', function () {
+        pageLoadMessages.forEach(fireToast);
+      });
+    {% endif %}
+
+    // ─── HTMX response messages (from HX-Trigger header) ─────────────────
+    // htmx.js dispatches a DOM event named after each HX-Trigger key, with
+    // event.detail set to the value. Our middleware uses key "django-toast".
+    document.body.addEventListener('django-toast', function (event) {
+      const toasts = Array.isArray(event.detail) ? event.detail : [event.detail];
+      toasts.forEach(fireToast);
+    });
+  })();
+  </script>
 </body>
 </html>

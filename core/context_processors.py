@@ -1,4 +1,7 @@
+import json
+
 from django.apps import apps
+from django.conf import settings
 
 from accounts.social import get_configured_providers
 
@@ -30,4 +33,8 @@ def site_meta(request):
         ],
         "pending_creator_requests": pending_creator_requests,
         "configured_social_providers": configured_providers,
+        # Toast config (defaults) — JSON-serialized here so the template can
+        # inject it as a valid JS literal. Plain `{{ dict|safe }}` would render
+        # Python's repr (True/False capitalized), which is a JS SyntaxError.
+        "toast_defaults": json.dumps(getattr(settings, "TOAST_DEFAULTS", {})),
     }
