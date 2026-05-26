@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Not found · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+  <div class="hero min-h-[60vh]">
+    <div class="hero-content text-center">
+      <div class="max-w-md">
+        <p class="text-8xl font-extrabold text-primary mb-2">404</p>
+        <h1 class="text-2xl font-bold mb-2">Page not found</h1>
+        <p class="opacity-70 mb-6">
+          We couldn't find what you were looking for. The link might be wrong,
+          or the quiz could have been deleted or made private.
+        </p>
+        <div class="flex gap-2 justify-center flex-wrap">
+          <a href="{% url 'core:home' %}" class="btn btn-primary">Back home</a>
+          <a href="{% url 'quizzes:browse' %}" class="btn btn-ghost">Browse quizzes</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
