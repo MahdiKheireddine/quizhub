@@ -1,15 +1,16 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.http import Http404
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from core.context_processors import DAISY_THEMES
 from core.email import send_notification
 
 from .forms import CreatorRequestForm
-from .models import CreatorRequest, User
+from .models import CreatorRequest, User, UserPreferences
 
 
 @login_required
@@ -168,3 +169,25 @@ def creator_profile(request, username):
         "quiz_count": quizzes.count(),
         "is_own_profile": request.user.is_authenticated and request.user == profile_user,
     })
+
+
+# ─── Preferences ────────────────────────────────────────────────────────
+
+@login_required
+@require_POST
+def save_theme_preference(request):
+    """Persist the user's chosen daisyUI theme.
+
+    Validates against the curated list in ``DAISY_THEMES`` so we never store
+    junk. Returns 204 on success, 400 on invalid input. Client UI relies on
+    localStorage for instant feedback; this call is the durable source of
+    truth across devices.
+    """
+    theme = request.POST.get("theme", "").strip()
+    if theme not in DAISY_THEMES:
+        return HttpResponseBadRequest("Invalid theme")
+    prefs, _ = UserPreferences.objects.get_or_create(user=request.user)
+    if prefs.theme != theme:
+        prefs.theme = theme
+        prefs.save(update_fields=["theme", "updated_at"])
+    return HttpResponse(status=204)

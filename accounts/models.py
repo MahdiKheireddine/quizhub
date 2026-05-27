@@ -117,3 +117,27 @@ class CreatorRequest(models.Model):
         self.reviewed_at = timezone.now()
         self.review_note = note
         self.save()
+
+
+class UserPreferences(models.Model):
+    """Per-user preferences. Auto-created via signal when a User is created
+    (see ``accounts/signals.py``) so ``user.preferences`` is always present.
+
+    For now only stores the daisyUI theme. The list of allowed theme names is
+    validated at save time in the view, not as a TextChoices, so the curated
+    list can evolve without a schema migration.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="preferences",
+    )
+    theme = models.CharField(max_length=32, default="dim")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "User preferences"
+
+    def __str__(self):
+        return f"Preferences for {self.user.username}"

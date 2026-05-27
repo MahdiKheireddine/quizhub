@@ -31,7 +31,7 @@
             <li>
               <button
                 type="button"
-                @click="theme = '{{ t }}'; localStorage.setItem('theme', '{{ t }}'); $event.target.blur()"
+                @click="setTheme('{{ t }}'); $event.target.blur()"
                 :class="theme === '{{ t }}' ? 'font-semibold active' : ''"
                 class="flex items-center gap-2"
               >

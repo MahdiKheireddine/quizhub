@@ -2,8 +2,12 @@
 <!DOCTYPE html>
 <html
   lang="en"
-  x-data="{ theme: localStorage.getItem('theme') || 'dim' }"
-  x-init="document.documentElement.setAttribute('data-theme', theme)"
+  x-data="themeManager({
+    serverTheme: '{{ user_theme|default_if_none:'' }}',
+    saveUrl: '{% url 'accounts:save_theme' %}',
+    isAuthenticated: {% if user.is_authenticated %}true{% else %}false{% endif %},
+  })"
+  x-init="init()"
   :data-theme="theme"
 >
 <head>
@@ -14,6 +18,40 @@
   {% tailwind_css %}
 
   <script defer src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+  {# themeManager — Alpine component on <html>. Must be defined BEFORE Alpine
+     loads so x-data can resolve the function name. #}
+  <script>
+    function themeManager({ serverTheme, saveUrl, isAuthenticated }) {
+      return {
+        theme: '',
+        init() {
+          // Priority: server preference (auth users) > localStorage > 'dim'.
+          this.theme = serverTheme || localStorage.getItem('theme') || 'dim';
+          document.documentElement.setAttribute('data-theme', this.theme);
+        },
+        setTheme(name) {
+          this.theme = name;
+          localStorage.setItem('theme', name);
+          if (!isAuthenticated) return;
+          // Fire-and-forget POST to the server. localStorage already holds
+          // the new value, so a network failure here doesn't lose the choice.
+          const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+          if (!csrf) return;
+          fetch(saveUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-CSRFToken': csrf,
+            },
+            credentials: 'same-origin',
+            body: 'theme=' + encodeURIComponent(name),
+          }).catch(() => {});
+        },
+      };
+    }
+  </script>
+
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
   {# SweetAlert2 — used by the toast system below #}
@@ -22,6 +60,8 @@
   {% block extra_head %}{% endblock %}
 </head>
 <body class="min-h-screen bg-base-200 text-base-content flex flex-col antialiased">
+
+  <form style="display:none">{% csrf_token %}</form>
 
   {% include "components/navbar.html" %}
 

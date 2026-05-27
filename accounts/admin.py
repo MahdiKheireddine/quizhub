@@ -1,7 +1,15 @@
 from django.contrib import admin, messages
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from .models import CreatorRequest, User
+from .models import CreatorRequest, User, UserPreferences
+
+
+class UserPreferencesInline(admin.StackedInline):
+    """One-row OneToOne — show it inline on the User page."""
+    model = UserPreferences
+    can_delete = False
+    extra = 0
+    readonly_fields = ("updated_at",)
 
 
 @admin.register(User)
@@ -17,6 +25,7 @@ class UserAdmin(DjangoUserAdmin):
     )
     list_filter = ("role", "is_creator_approved", "is_staff", "is_active")
     search_fields = ("username", "email")
+    inlines = [UserPreferencesInline]
 
     fieldsets = DjangoUserAdmin.fieldsets + (
         ("Quiz platform", {"fields": ("role", "is_creator_approved", "bio")}),
@@ -24,6 +33,14 @@ class UserAdmin(DjangoUserAdmin):
     add_fieldsets = DjangoUserAdmin.add_fieldsets + (
         ("Quiz platform", {"fields": ("role", "is_creator_approved", "bio")}),
     )
+
+
+@admin.register(UserPreferences)
+class UserPreferencesAdmin(admin.ModelAdmin):
+    list_display = ("user", "theme", "updated_at")
+    list_filter = ("theme",)
+    search_fields = ("user__username", "user__email")
+    readonly_fields = ("updated_at",)
 
 
 @admin.register(CreatorRequest)
