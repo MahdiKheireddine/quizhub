@@ -8,13 +8,13 @@ DEBUG = False
 # ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS are already read from env in base.py
 # (DJANGO_ALLOWED_HOSTS, DJANGO_CSRF_TRUSTED_ORIGINS).
 
-# ─── Email (Gmail SMTP) ──────────────────────────────────────────────────
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
-EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+# ─── Email (Brevo HTTP API via Anymail) ──────────────────────────────────
+# Render's free tier blocks outbound SMTP (port 587), so we send via Brevo's
+# HTTP API instead. The API key is set in Render's dashboard, not in this file.
+EMAIL_BACKEND = "anymail.backends.brevo.EmailBackend"
+ANYMAIL = {
+    "BREVO_API_KEY": env("ANYMAIL_BREVO_API_KEY", default=""),
+}
 
 # ─── Security headers ────────────────────────────────────────────────────
 # Tell Django it's behind an HTTPS-terminating proxy (Render's load balancer).

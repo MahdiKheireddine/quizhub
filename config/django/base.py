@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'django.contrib.sites',
 
+    "anymail",
     "tailwind",
     "theme",
 
@@ -224,7 +225,10 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 # Email
-# EMAIL_BACKEND is set per-environment (console in local.py, SMTP in production.py).
+# EMAIL_BACKEND is set per-environment (console in local.py, Brevo HTTP in production.py).
+# EMAIL_TIMEOUT is a hard cap on any underlying send (SMTP fallback included),
+# so a hung connection can never block a worker for more than 10 seconds.
+EMAIL_TIMEOUT = 10
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@quizhub.local")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL  # used for admin error emails
 

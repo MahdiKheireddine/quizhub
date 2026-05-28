@@ -16,16 +16,18 @@ logger = logging.getLogger(__name__)
 
 
 def send_notification(*, recipient, subject, template_base, context):
-    """Send a multipart email using two templates.
+    """Send a multipart email — best-effort, never raises.
+
+    Email is a side-effect of user actions, not part of the critical path.
+    A failure to send (network blip, provider outage, expired API key)
+    should be logged but MUST NOT break the user's request.
 
     ``template_base`` is the name without extension, e.g.
     ``'emails/invitation_received'``. We render ``<base>.txt`` for the plain-text
     part and ``<base>.html`` for the HTML part. Both are required — plain-text
     matters for accessibility and spam scoring.
 
-    Silent failure: if the recipient has no email (rare with allauth, but
-    possible), we log and return False. Callers don't need to check; email is
-    fire-and-forget.
+    Returns True on successful send, False on any failure.
     """
     if not recipient or not recipient.email:
         logger.info("Skipping email: no recipient or no email on %r", recipient)
@@ -33,6 +35,8 @@ def send_notification(*, recipient, subject, template_base, context):
 
     full_context = {**context, "site_name": "QuizHub", "recipient": recipient}
 
+    # Render templates first. If templates are broken we want to know about it
+    # in logs (this is our bug, not a provider issue).
     try:
         text_body = render_to_string(f"{template_base}.txt", full_context)
         html_body = render_to_string(f"{template_base}.html", full_context)
@@ -48,9 +52,12 @@ def send_notification(*, recipient, subject, template_base, context):
     )
     msg.attach_alternative(html_body, "text/html")
 
+    # Catch EVERYTHING. Network errors, auth errors, provider 500s, timeouts —
+    # none of them should bubble up to the view. Email is best-effort.
     try:
-        msg.send(fail_silently=False)
-        return True
+        sent = msg.send(fail_silently=False)
+        return bool(sent)
     except Exception:
-        logger.exception("Failed to send email to %s", recipient.email)
+        logger.exception("Failed to send email to %s (template=%s)",
+                         recipient.email, template_base)
         return False
