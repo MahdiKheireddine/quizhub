@@ -23,7 +23,9 @@ SECRET_KEY = env('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DJANGO_DEBUG', default=False)
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
+
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 
 SITE_ID = 1
 
@@ -64,6 +66,7 @@ NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -97,18 +100,30 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+# Accepts either DATABASE_URL (production, single string) or the individual
+# DATABASE_NAME/USER/PASSWORD/HOST/PORT vars (dev convenience).
+import dj_database_url
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': env('DATABASE_NAME'),
-        'USER': env('DATABASE_USER'),
-        'PASSWORD': env('DATABASE_PASSWORD'),
-        'HOST': env('DATABASE_HOST'),
-        'PORT': env('DATABASE_PORT'),
+if env("DATABASE_URL", default=None):
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=env("DATABASE_URL"),
+            conn_max_age=600,           # connection pooling
+            conn_health_checks=True,    # auto-reconnect on stale connections
+            ssl_require=not DEBUG,      # SSL required in prod, optional in dev
+        )
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("DATABASE_NAME"),
+            "USER": env("DATABASE_USER"),
+            "PASSWORD": env("DATABASE_PASSWORD"),
+            "HOST": env("DATABASE_HOST"),
+            "PORT": env("DATABASE_PORT"),
+        }
+    }
 
 
 # Password validation
@@ -142,10 +157,19 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
+# Static files
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"   # collectstatic target
 
-STATIC_URL = 'static/'
+# WhiteNoise serves compressed static files directly from Django in production.
+# In dev (DEBUG=True), Django's runserver handles statics itself; WhiteNoise is
+# a no-op but the storage class is fine to leave configured.
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -196,9 +220,10 @@ SOCIALACCOUNT_PROVIDERS = {
     },
 }
 
-# Email (dev): print messages to the console instead of sending them.
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = "noreply@quizhub.local"
+# Email
+# EMAIL_BACKEND is set per-environment (console in local.py, SMTP in production.py).
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="noreply@quizhub.local")
+SERVER_EMAIL = DEFAULT_FROM_EMAIL  # used for admin error emails
 
 
 # SweetAlert toast defaults — read by base.html on every page load.
@@ -210,10 +235,3 @@ TOAST_DEFAULTS = {
     "showConfirmButton": False,
     "toast": True,
 }
-
-
-if DEBUG:
-    INSTALLED_APPS += ["django_browser_reload"]
-    MIDDLEWARE += [
-        "django_browser_reload.middleware.BrowserReloadMiddleware",
-    ]
