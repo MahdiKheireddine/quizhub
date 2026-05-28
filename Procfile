@@ -1,0 +1,1 @@
+web: gunicorn config.wsgi:application --workers 2 --worker-class sync --timeout 30 --bind 0.0.0.0:$PORT

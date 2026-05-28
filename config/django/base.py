@@ -61,7 +61,10 @@ INSTALLED_APPS = [
 
 TAILWIND_APP_NAME = "theme"
 
-NPM_BIN_PATH = r"C:\Program Files\nodejs\npm.cmd"
+# django-tailwind shells out to npm during `manage.py tailwind ...`. On Linux
+# (Render) `npm` is on PATH. On Windows, set NPM_BIN_PATH in .env to the full
+# path (e.g. C:\Program Files\nodejs\npm.cmd).
+NPM_BIN_PATH = env("NPM_BIN_PATH", default="npm")
 
 
 MIDDLEWARE = [
