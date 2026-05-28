@@ -19,8 +19,6 @@
 
   <script defer src="https://unpkg.com/htmx.org@1.9.12"></script>
 
-  {# themeManager — Alpine component on <html>. Must be defined BEFORE Alpine
-     loads so x-data can resolve the function name. #}
   <script>
     function themeManager({ serverTheme, saveUrl, isAuthenticated }) {
       return {
