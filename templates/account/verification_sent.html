@@ -1,0 +1,44 @@
+{% extends "account/base.html" %}
+{% load i18n %}
+
+{% block title %}Verify your email · {{ SITE_NAME }}{% endblock %}
+
+{% block content %}
+  <div class="max-w-md mx-auto">
+    <div class="card bg-base-100 shadow-xl border border-base-300">
+      <div class="card-body">
+        <div class="flex items-center justify-center mb-2">
+          <div class="badge badge-info badge-lg gap-1">📬 Check your inbox</div>
+        </div>
+
+        <h1 class="card-title text-2xl text-center justify-center">Verify your email</h1>
+
+        <p class="text-base-content/80 mt-2">
+          We've sent a verification link to your email address. Click the link in the email to confirm your account.
+        </p>
+
+        <div class="alert alert-warning mt-4 text-sm">
+          <span>
+            You'll need to verify your email before you can log in.
+          </span>
+        </div>
+
+        <div class="mt-6 text-sm text-base-content/70 space-y-2">
+          <p class="font-semibold">Didn't get it?</p>
+          <ul class="list-disc list-inside space-y-1">
+            <li>Check your spam folder</li>
+            <li>Make sure the email address you signed up with was correct</li>
+            <li>Wait a minute and refresh your inbox</li>
+          </ul>
+          <p class="pt-2">
+            Logging in again will resend the verification email.
+          </p>
+        </div>
+
+        <div class="card-actions justify-center mt-6">
+          <a href="{% url 'account_login' %}" class="btn btn-primary">Back to log in</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
