@@ -17,9 +17,7 @@ The frontend is server-rendered with HTMX for interactivity — no SPA, no JSON 
 
 ## 🔗 Live demo
 
-🌐 **[Try it live](https://YOUR-DEPLOY-URL.example.com)** *(coming soon)*
-
-> Note: social login (Google, Facebook) is enabled but in development mode — please use email signup to try the app end-to-end.
+🌐 **[Try it live](https://quizhub-jrev.onrender.com/)**
 
 ---
 
