@@ -33,7 +33,7 @@ The frontend is server-rendered with HTMX for interactivity — no SPA, no JSON 
 |---|---|
 | ![quiz](docs/screenshots/quiz-taking.png) | ![leaderboard](docs/screenshots/leaderboard.png) |
 
-| Question editor (HTMX) | Theme switcher (30+ themes) |
+| Question editor (HTMX) | Theme switcher (7 themes) |
 |---|---|
 | ![editor](docs/screenshots/question-editor.png) | ![themes](docs/screenshots/themes.png) |
 
