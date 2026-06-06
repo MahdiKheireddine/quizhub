@@ -19,12 +19,20 @@ from django.contrib import admin
 from django.shortcuts import render
 from django.urls import include, path
 
+from accounts.views import SingleEmailView
+
 urlpatterns = [
     path("", include("core.urls")),
     path("", include("quizzes.urls")),
     path("", include("attempts.urls")),
     path("u/", include("accounts.urls")),
     path('admin/', admin.site.urls),
+
+    # Override allauth's email management with our single-email variant.
+    # MUST come before the allauth include so this pattern wins on dispatch.
+    # The name='account_email' matches allauth's name so `{% url %}` lookups
+    # and internal redirects still resolve.
+    path('accounts/email/', SingleEmailView.as_view(), name='account_email'),
     path('accounts/', include('allauth.urls')),
 ]
 

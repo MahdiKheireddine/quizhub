@@ -1,7 +1,9 @@
+from allauth.account.views import EmailView
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.http import Http404, HttpResponse, HttpResponseBadRequest
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -191,3 +193,34 @@ def save_theme_preference(request):
         prefs.theme = theme
         prefs.save(update_fields=["theme", "updated_at"])
     return HttpResponse(status=204)
+
+
+# ─── Email management ───────────────────────────────────────────────────
+
+class SingleEmailView(EmailView):
+    """Variant of allauth's EmailView that enforces 'one email per account'.
+
+    Allauth's default EmailView supports four POST actions: add, remove,
+    change_primary, and send (resend verification). We want only `send` to work.
+
+    Anyone who tries to POST add/remove gets a polite redirect with an error
+    message — covers the case of a stale browser tab, a direct curl call, or
+    a user who somehow finds the (now hidden) form.
+    """
+
+    BLOCKED_ACTIONS = {"action_add", "action_remove", "action_primary"}
+
+    def post(self, request, *args, **kwargs):
+        # Allauth determines the action by which submit button was clicked,
+        # encoded as a key in the request body. Refuse if any blocked action
+        # is present.
+        if any(key in request.POST for key in self.BLOCKED_ACTIONS):
+            messages.error(
+                request,
+                "QuizHub accounts use a single email address. "
+                "Email changes aren't currently supported through this page.",
+            )
+            return HttpResponseRedirect(reverse("account_email"))
+
+        # action_send (resend verification) is fine — let allauth handle it.
+        return super().post(request, *args, **kwargs)

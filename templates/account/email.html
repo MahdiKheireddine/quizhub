@@ -1,124 +1,69 @@
 {% extends "account/base.html" %}
-{% load allauth account %}
+{% load i18n %}
 
-{% block title %}Email addresses · {{ SITE_NAME }}{% endblock %}
+{% block title %}Your email · {{ SITE_NAME }}{% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto space-y-6">
+  <div class="max-w-xl mx-auto">
 
-  {# ---- Existing emails ---- #}
-  <div class="card bg-base-100 shadow-xl border border-base-300">
-    <div class="card-body">
-      <h1 class="text-2xl font-bold">Email addresses</h1>
-      <p class="text-sm opacity-70">
-        Manage the email addresses associated with your account.
-      </p>
+    <div class="card bg-base-100 shadow-xl border border-base-300">
+      <div class="card-body">
+        <h1 class="card-title text-2xl">Email address</h1>
+        <p class="text-base-content/70 text-sm mt-1">
+          Your account is tied to a single email address. This is where we'll send notifications about invitations, creator requests, and quiz updates.
+        </p>
 
-      {% if user.emailaddress_set.all %}
-        <form method="post" action="{% url 'account_email' %}" class="mt-4 space-y-4">
-          {% csrf_token %}
+        <div class="divider my-3"></div>
 
-          <ul class="space-y-2">
-            {% for emailaddress in user.emailaddress_set.all %}
-              <li class="flex items-center gap-3 rounded-lg border border-base-300 bg-base-200/50 p-3">
-                <input
-                  type="radio"
-                  name="email"
-                  value="{{ emailaddress.email }}"
-                  id="email_radio_{{ forloop.counter }}"
-                  class="radio radio-primary radio-sm"
-                  {% if emailaddress.primary or user.emailaddress_set.count == 1 %}checked{% endif %}
-                />
-                <label for="email_radio_{{ forloop.counter }}" class="flex-1 cursor-pointer">
-                  <span class="break-all">{{ emailaddress.email }}</span>
-                </label>
-                <div class="flex flex-wrap gap-1 justify-end">
-                  {% if emailaddress.verified %}
+        {% if emailaddresses %}
+          {% with primary=emailaddresses.0 %}
+            <div class="flex items-center justify-between gap-3 p-4 bg-base-200 rounded-lg">
+              <div class="min-w-0 flex-1">
+                <p class="font-mono text-base">{{ primary.email }}</p>
+                <div class="flex gap-1 mt-1">
+                  {% if primary.verified %}
                     <span class="badge badge-success badge-sm">Verified</span>
                   {% else %}
                     <span class="badge badge-warning badge-sm">Unverified</span>
                   {% endif %}
-                  {% if emailaddress.primary %}
-                    <span class="badge badge-primary badge-sm">Primary</span>
-                  {% endif %}
+                  <span class="badge badge-ghost badge-sm">Primary</span>
                 </div>
-              </li>
-            {% endfor %}
-          </ul>
+              </div>
+            </div>
 
-          <div class="flex flex-wrap gap-2 pt-2">
-            <button type="submit" name="action_primary" class="btn btn-primary btn-sm">
-              Make primary
-            </button>
-            <button type="submit" name="action_send" class="btn btn-ghost btn-sm">
-              Re-send verification
-            </button>
-            <button
-              type="submit"
-              name="action_remove"
-              class="btn btn-error btn-sm"
-              data-confirm="Remove the selected email address?"
-              data-confirm-danger="true"
-              data-confirm-label="Remove"
-            >
-              Remove
-            </button>
-          </div>
-        </form>
-      {% else %}
-        <div role="alert" class="alert alert-warning mt-4">
-          <span>You don't have any email addresses on file.</span>
-        </div>
-      {% endif %}
-    </div>
-  </div>
-
-  {# ---- Add new email ---- #}
-  <div class="card bg-base-100 shadow-xl border border-base-300">
-    <div class="card-body">
-      <h2 class="text-xl font-bold">Add an email address</h2>
-      <p class="text-sm opacity-70">
-        We'll send a verification link to the new address before activating it.
-      </p>
-
-      {% if form.non_field_errors %}
-        <div role="alert" class="alert alert-error mt-3">
-          {% for err in form.non_field_errors %}
-            <span>{{ err }}</span>
-          {% endfor %}
-        </div>
-      {% endif %}
-
-      <form method="post" action="{% url 'account_email' %}" class="space-y-4 mt-4">
-        {% csrf_token %}
-
-        {% for field in form %}
-          <fieldset class="fieldset w-full">
-            <legend class="fieldset-legend">{{ field.label }}</legend>
-            <input
-              type="{% if field.name == 'email' %}email{% else %}{{ field.field.widget.input_type }}{% endif %}"
-              name="{{ field.name }}"
-              id="{{ field.id_for_label }}"
-              {% if field.value %}value="{{ field.value }}"{% endif %}
-              {% if field.field.required %}required{% endif %}
-              placeholder="{{ field.label }}"
-              class="input w-full{% if field.errors %} input-error{% endif %}"
-              autocomplete="email"
-            />
-            {% if field.errors %}
-              <p class="fieldset-label text-error">
-                {% for e in field.errors %}{{ e }}{% if not forloop.last %} · {% endif %}{% endfor %}
+            {% if not primary.verified %}
+              <form method="post" action="{% url 'account_email' %}" class="mt-4">
+                {% csrf_token %}
+                <input type="hidden" name="email" value="{{ primary.email }}">
+                <p class="text-sm text-base-content/70 mb-2">
+                  Your email isn't verified yet. We sent a verification link when you signed up — check your inbox (and spam folder). If you can't find it:
+                </p>
+                <button type="submit" name="action_send" class="btn btn-primary btn-sm">
+                  Re-send verification email
+                </button>
+              </form>
+            {% else %}
+              <p class="text-sm text-base-content/60 mt-4">
+                ✓ Your email is verified. You're all set.
               </p>
             {% endif %}
-          </fieldset>
-        {% endfor %}
+          {% endwith %}
+        {% else %}
+          <div class="alert alert-warning text-sm">
+            No email address found on your account. This is unexpected — please contact support.
+          </div>
+        {% endif %}
 
-        <button type="submit" name="action_add" class="btn btn-primary w-full sm:w-auto">
-          Add email
-        </button>
-      </form>
+        <div class="divider my-3"></div>
+
+        <div class="text-xs text-base-content/60 space-y-1">
+          <p>
+            <strong>Need to change your email?</strong> Email changes aren't currently supported through this page.
+            If you absolutely need to update it, please contact an admin.
+          </p>
+        </div>
+      </div>
     </div>
-  </div>
 
-</div>
+  </div>
 {% endblock %}
