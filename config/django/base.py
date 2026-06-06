@@ -202,6 +202,7 @@ LOGIN_REDIRECT_URL = "/"
 ACCOUNT_LOGOUT_REDIRECT_URL = "/"
 
 # django-allauth socialaccount
+SOCIALACCOUNT_ADAPTER = "accounts.social.SocialAccountAdapter"  # auto-link verified-email logins
 SOCIALACCOUNT_LOGIN_ON_GET = True   # one-click login (skip the intermediate confirm page)
 SOCIALACCOUNT_AUTO_SIGNUP = True    # if email matches an existing user, link automatically
 SOCIALACCOUNT_EMAIL_VERIFICATION = "none"  # trust Google/Facebook to verify
