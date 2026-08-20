@@ -224,3 +224,23 @@ class SingleEmailView(EmailView):
 
         # action_send (resend verification) is fine — let allauth handle it.
         return super().post(request, *args, **kwargs)
+
+from django.http import HttpResponse
+from django.conf import settings
+from django.core.mail import send_mail
+
+def email_test(request):
+    key = settings.ANYMAIL.get("BREVO_API_KEY", "")
+    info = [
+        f"backend={settings.EMAIL_BACKEND}",
+        f"from={settings.DEFAULT_FROM_EMAIL}",
+        f"key_len={len(key)}",
+        f"key_prefix={key[:12]}",
+    ]
+    try:
+        n = send_mail("QuizHub test", "hello", None,
+                      ["mahdikheireddine2@gmail.com"], fail_silently=False)
+        info.append(f"RESULT sent={n}")
+    except Exception as e:
+        info.append(f"ERROR {type(e).__name__}: {e}")
+    return HttpResponse("\n".join(info), content_type="text/plain")

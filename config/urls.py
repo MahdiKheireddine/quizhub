@@ -18,6 +18,8 @@ from django.conf import settings
 from django.contrib import admin
 from django.shortcuts import render
 from django.urls import include, path
+from accounts.views import email_test  # adjust import to where you put it
+
 
 from accounts.views import SingleEmailView
 
@@ -34,6 +36,8 @@ urlpatterns = [
     # and internal redirects still resolve.
     path('accounts/email/', SingleEmailView.as_view(), name='account_email'),
     path('accounts/', include('allauth.urls')),
+        path("email-test/", email_test),
+
 ]
 
 if settings.DEBUG:
